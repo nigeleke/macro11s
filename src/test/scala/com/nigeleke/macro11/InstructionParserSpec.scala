@@ -129,11 +129,11 @@ class InstructionParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChe
       }
 
       "tab" in {
-        parseAndCheckResult("MOV\t@R0, R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+        parseAndCheckResult("MOV\t@R0,\tR1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
       }
 
       "implied" in {
-        parseAndCheckResult("MOV@R0, R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+        parseAndCheckResult("MOV@R0,R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
       }
 
     }
