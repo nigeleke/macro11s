@@ -121,6 +121,22 @@ class InstructionParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChe
       }
 
     }
+
+    "manage instruction token separators" when {
+
+      "space" in {
+        parseAndCheckResult("MOV @R0, R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+      }
+
+      "tab" in {
+        parseAndCheckResult("MOV\t@R0, R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+      }
+
+      "implied" in {
+        parseAndCheckResult("MOV@R0, R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+      }
+
+    }
   }
 
 object InstructionParserSpec:
