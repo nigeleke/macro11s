@@ -17,13 +17,11 @@ class AddressingModeOperandParserSpec extends AnyWordSpec with ScalaCheckDrivenP
   "The OperandParser" should {
 
     given Shrink[String] = Shrink(_ => Stream.empty)
-    import OperandParserSpec.*
+    import Generators.*
 
     def parseAndCheckResult(parser: Parser[Operand], p: String, expectedOperand: Operand) =
       ParserUnderTest.parse(parser, p) match
-        case Success(result, remainder) =>
-          result should be(expectedOperand)
-          remainder.atEnd should be(true)
+        case Success(result, _)  => result should be(expectedOperand)
         case Failure(message, _) => fail(message)
         case Error(error, _)     => fail(error)
 
@@ -133,23 +131,3 @@ class AddressingModeOperandParserSpec extends AnyWordSpec with ScalaCheckDrivenP
     }
 
   }
-
-object OperandParserSpec:
-  val genRegister = Gen.oneOf((0 to 7).map(r => s"%$r") ++ (0 to 5).map(r => s"R$r") ++ Seq("SP", "PC"))
-  val genSymbol =
-    for symbol <- Gen
-        .someOf(('A' to 'Z') ++ ('a' to 'z') ++ ('0' to '9') ++ "$.".toSeq)
-        .suchThat(_.nonEmpty)
-    yield String(symbol.toArray)
-
-  // format: off
-  val genAddressingModeOperand = for // Source & Destinatioon Operands
-    r <- genRegister
-    s <- genSymbol
-    operand <- Gen.oneOf(Seq(
-      s"$r", s"@$r", s"($r)", s"($r)+", s"@($r)+", s"-($r)", s"@-($r)",
-      s"$s($r)", s"@$s($r)", s"#$s", s"@#$s", s"$s", s"@$s"))
-  yield operand
-  // format: on
-
-  val genAddressOffsetOperand = genSymbol

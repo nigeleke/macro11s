@@ -18,15 +18,24 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
   "The Statement parser" should {
 
     given Shrink[String] = Shrink(s => Stream.empty)
-    import StatementParserSpec.*
+    import Generators.*
 
     def parseAndCheckResult(s: String, expectedStatement: Statement) =
       ParserUnderTest.parse(ParserUnderTest.statement, s) match
-        case Success(result, remainder) =>
-          result should be(expectedStatement)
-          remainder.atEnd should be(true)
+        case Success(result, _)  => result should be(expectedStatement)
         case Failure(message, _) => fail(message)
         case Error(error, _)     => fail(error)
+
+    extension (s: String)
+      def toLabel: Label =
+        if s.endsWith("::")
+        then GlobalLabel(s.stripTrailing(":"))
+        else LocalLabel(s.stripTrailing(":"))
+
+      def stripTrailing(tail: String): String =
+        if s.endsWith(tail)
+        then s.take(s.length - tail.length).stripTrailing(tail)
+        else s
 
     "decode statements" when {
       "-labels-instruction-comment - i.e. empty" in {
@@ -92,29 +101,3 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       }
     }
   }
-
-object StatementParserSpec:
-  extension (s: String)
-    def toLabel: Label =
-      if s.endsWith("::")
-      then GlobalLabel(s.stripTrailing(":"))
-      else LocalLabel(s.stripTrailing(":"))
-    def stripTrailing(tail: String): String =
-      if s.endsWith(tail)
-      then s.take(s.length - tail.length).stripTrailing(tail)
-      else s
-
-  val genComment = Gen.const("; Comment")
-
-  val genInstruction =
-    import InstructionParserSpec.*
-    for mnemonic <- genNoOperandMnemonic
-    yield mnemonic.toString
-
-  val genLabel =
-    import OperandParserSpec.*
-    for
-      label  <- genSymbol
-      suffix <- Gen.oneOf(Seq(":", "::"))
-    yield s"$label$suffix"
-  val genLabels = Gen.listOf(genLabel)

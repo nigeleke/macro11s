@@ -4,14 +4,12 @@ import com.nigeleke.macro11.ast.*
 
 import scala.util.parsing.combinator.*
 
-trait OperandParser extends RegexParsers:
+trait OperandParser extends UtilityParser with RegexParsers:
 
   private def register =
     val names         = (0 to 7).map(r => s"%$r") ++ (0 to 5).map(r => s"R$r") ++ Seq("SP", "PC")
     val first :: rest = names.map(_ ^^ { identity }).toList: @unchecked
     rest.foldLeft(first)((rs, r) => { rs ||| r })
-
-  def symbol = """[\\$\\.A-Za-z0-9]*""".r ^^ { identity }
 
   private def registerMode =
     register ^^ { Operand.RegisterMode(_) }
