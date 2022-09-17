@@ -9,8 +9,8 @@ import scala.util.parsing.combinator.*
 
 trait DirectiveParser extends InstructionParser with UtilityParser:
 
-  private val delimitedString      = """(.)((?!\1).)*(\1)""".r ^^ { identity }
-  private val delimitedRad50String = """(.)((?!\1)[A-Z0-9$. ])*(\1)""".r ^^ { identity }
+  private val delimitedString      = """(.)((?!\1).)*(\1)""".r ^^ { DelimitedString(_) }
+  private val delimitedRad50String = """(.)((?!\1)[A-Z0-9$. ])*(\1)""".r ^^ { DelimitedString(_) }
   private val double               = """\d*(\.\d*)?""".r ^^ { BigDecimal(_) }
   private val digits               = """\d+""".r ^^ { identity }
   private val rad50Symbol          = """[A-Z0-9$.]*""".r ^^ { identity }

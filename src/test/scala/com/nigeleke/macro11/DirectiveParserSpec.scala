@@ -88,11 +88,11 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
         s.substring(1, s.length - 1)
 
     "parse .ASCII directive" when {
-      testDelimitedStringDirective(".ASCII", genSimpleDelimitedString, AsciiDirective(_, _))
+      testDelimitedStringDirective(".ASCII", genSimpleDelimitedString, (s, c) => AsciiDirective(DelimitedString(s), c))
     }
 
     "parse .ASCIZ directive" when {
-      testDelimitedStringDirective(".ASCIZ", genSimpleDelimitedString, AscizDirective(_, _))
+      testDelimitedStringDirective(".ASCIZ", genSimpleDelimitedString, (s, c) => AscizDirective(DelimitedString(s), c))
     }
 
     "parse .ASECT directive" in {
@@ -152,7 +152,7 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .IDENT directive" when {
-      testDelimitedStringDirective(".IDENT", genRad50DelimitedString, IdentDirective(_, _))
+      testDelimitedStringDirective(".IDENT", genRad50DelimitedString, (s, c) => IdentDirective(DelimitedString(s), c))
     }
 
     "parse .IF directive" when {
@@ -249,11 +249,11 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .INCLUDE directive" when {
-      testDelimitedStringDirective(".LIBRARY", genSimpleDelimitedString, LibraryDirective(_, _))
+      testDelimitedStringDirective(".LIBRARY", genSimpleDelimitedString, (s, c) => LibraryDirective(DelimitedString(s), c))
     }
 
     "parse .LIBRARY directive" when {
-      testDelimitedStringDirective(".INCLUDE", genSimpleDelimitedString, IncludeDirective(_, _))
+      testDelimitedStringDirective(".INCLUDE", genSimpleDelimitedString, (s, c) => IncludeDirective(DelimitedString(s), c))
     }
 
     "parse .LIMIT directive" in {
@@ -297,7 +297,7 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .RAD50 directive" when {
-      testDelimitedStringDirective(".RAD50", genRad50DelimitedString, Rad50Directive(_, _))
+      testDelimitedStringDirective(".RAD50", genRad50DelimitedString, (s, c) => Rad50Directive(DelimitedString(s), c))
     }
 
     "parse .RADIX directive" in {
