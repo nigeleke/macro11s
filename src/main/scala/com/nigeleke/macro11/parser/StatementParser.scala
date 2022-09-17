@@ -13,6 +13,6 @@ trait StatementParser extends InstructionParser with UtilityParser with RegexPar
   private def labels: Parser[List[Label]] = rep(label)
 
   def statement: Parser[Statement] =
-    labels ~ opt(instruction) ~ opt(comment) ^^ { case ls ~ i ~ c =>
+    labels ~ opt(instruction) ~ comment ^^ { case ls ~ i ~ c =>
       Statement(ls, i, c)
     }

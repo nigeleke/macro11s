@@ -9,7 +9,7 @@ trait UtilityParser extends RegexParsers:
   val anyCharacter = """.""".r ^^ { identity }
   val anyString    = """.*""".r ^^ { identity }
   val separator    = "," ^^ { identity } // <tab> & <sp> managed by scala parser combinator
-  def comment      = ";.*".r ^^ { Comment.apply }
+  def comment      = opt(";.*".r).map(_.getOrElse("")) ^^ { Comment.apply }
   def symbol       = """[\\$\\.A-Za-z0-9]+""".r ^^ { identity }
 
   // TODO: Expand

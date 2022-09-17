@@ -12,7 +12,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 class UtilityParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
 
   object ParserUnderTest extends UtilityParser {
-    def optionalSymbolComment = opt(symbol) ~ opt(comment) ^^ { case s ~ c => (s, c) }
+    def optionalSymbolComment = opt(symbol) ~ comment ^^ { case s ~ c => (s, c) }
   }
   import ParserUnderTest.*
 
@@ -51,11 +51,10 @@ class UtilityParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks 
     }
 
     "parse opt(symbol) followed by opt(comment)" in {
-      forAll(genMaybeSymbol, genMaybeComment) { (maybeS, maybeC) =>
+      forAll(genMaybeSymbol, genComment) { (maybeS, comment) =>
         val s = maybeS.getOrElse("")
-        val c = maybeC.getOrElse("")
-        ParserUnderTest.parse(ParserUnderTest.optionalSymbolComment, s"$s $c") match
-          case Success(result, _)  => result should be((maybeS, maybeC.map(Comment.apply)))
+        ParserUnderTest.parse(ParserUnderTest.optionalSymbolComment, s"$s $comment") match
+          case Success(result, _)  => result should be((maybeS, Comment(comment)))
           case Failure(message, _) => fail(message)
           case Error(error, _)     => fail(error)
       }

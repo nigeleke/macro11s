@@ -9,9 +9,10 @@ import org.scalacheck.Prop.*
 object Generators:
   // Utility...
   val genComment =
-    for comment <- Gen.asciiPrintableStr
-    yield s"; $comment"
-  val genMaybeComment = Gen.option(genComment)
+    for
+      text    <- Gen.asciiPrintableStr
+      comment <- Gen.oneOf("", s"; $text")
+    yield comment
 
   val genSeparator = Gen.oneOf(" ", "\t", ",")
 
@@ -99,11 +100,7 @@ object Generators:
   val genDsablEnablArgument =
     Gen.oneOf("ABS", "AMA", "CDR", "CRF", "FPT", "LC", "LCM", "LSB", "MCL", "PNC", "REG", "GBL")
 
-  val genFloat =
-    for
-      i <- Gen.numStr.retryUntil(s => !s.startsWith("0"))
-      f <- Gen.option(Gen.numStr.map(s => s".$s")).map(_.getOrElse(""))
-    yield s"$i$f"
+  val genFloat     = Gen.double.map(BigDecimal(_).toString)
   val genFloatList = Gen.nonEmptyListOf(genFloat)
 
   val genPSectArguments =
