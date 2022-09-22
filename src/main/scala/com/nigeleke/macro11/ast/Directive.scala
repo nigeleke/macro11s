@@ -1,6 +1,6 @@
 package com.nigeleke.macro11.ast
 
-trait Directive
+trait Directive extends ProgramLine
 
 // TODO: Amend String to StringExpression
 case class AsciiDirective(param: DelimitedString, comment: Comment) extends Directive
@@ -10,11 +10,11 @@ case class AscizDirective(param: DelimitedString, comment: Comment) extends Dire
 case class ASectDirective(comment: Comment) extends Directive
 
 // TODO: Amend String to NumericExpression
-case class BlkbDirective(expression: String, comment: Comment) extends Directive
+case class BlkbDirective(expression: Expression, comment: Comment) extends Directive
 
-case class BlkwDirective(expression: String, comment: Comment) extends Directive
+case class BlkwDirective(expression: Expression, comment: Comment) extends Directive
 
-case class ByteDirective(expressions: List[String], comment: Comment) extends Directive
+case class ByteDirective(expressions: List[Expression], comment: Comment) extends Directive
 
 case class CrossDirective(symbols: List[String], comment: Comment) extends Directive
 
@@ -24,7 +24,7 @@ case class DsablDirective(argument: EnablDsablArgument, comment: Comment) extend
 
 case class EnablDirective(argument: EnablDsablArgument, comment: Comment) extends Directive
 
-case class EndDirective(expression: String, comment: Comment) extends Directive
+case class EndDirective(expression: Option[Expression], comment: Comment) extends Directive
 
 case class EndcDirective(comment: Comment) extends Directive
 
@@ -38,7 +38,20 @@ case class GlobalDirective(globals: List[String], comment: Comment) extends Dire
 
 case class IdentDirective(content: DelimitedString, comment: Comment) extends Directive
 
-case class IfDirective(condition: String, arguments: List[String], comment: Comment) extends Directive
+trait IfDirective extends Directive
+case class IfDirectiveBlank(
+    condition: String,
+    argument: ExpressionTerm,
+    comment: Comment
+) extends IfDirective
+case class IfDirectiveCompare(condition: String, expression: Expression, comment: Comment) extends IfDirective
+case class IfDirectiveDefined(condition: String, symbol: String, comment: Comment)         extends IfDirective
+case class IfDirectiveIdentical(
+    condition: String,
+    argument1: ExpressionTerm,
+    argument2: ExpressionTerm,
+    comment: Comment
+) extends IfDirective
 
 case class IffDirective(comment: Comment) extends Directive
 
@@ -46,7 +59,32 @@ case class IftDirective(comment: Comment) extends Directive
 
 case class IftfDirective(comment: Comment) extends Directive
 
-case class IifDirective(condition: String, arguments: List[String], instruction: Instruction, comment: Comment) extends Directive
+trait IifDirective extends Directive
+case class IifDirectiveBlank(
+    condition: String,
+    argument: ExpressionTerm,
+    instruction: Instruction,
+    comment: Comment
+) extends IifDirective
+case class IifDirectiveCompare(
+    condition: String,
+    expression: Expression,
+    instruction: Instruction,
+    comment: Comment
+) extends IifDirective
+case class IifDirectiveDefined(
+    condition: String,
+    symbol: String,
+    instruction: Instruction,
+    comment: Comment
+) extends IifDirective
+case class IifDirectiveIdentical(
+    condition: String,
+    argument1: ExpressionTerm,
+    argument2: ExpressionTerm,
+    instruction: Instruction,
+    comment: Comment
+) extends IifDirective
 
 case class IncludeDirective(file: DelimitedString, comment: Comment) extends Directive
 
@@ -85,4 +123,4 @@ case class TitleDirective(title: String) extends Directive
 
 case class WeakDirective(globals: List[String], comment: Comment) extends Directive
 
-case class WordDirective(expressions: List[String], comment: Comment) extends Directive
+case class WordDirective(expressions: List[Expression], comment: Comment) extends Directive

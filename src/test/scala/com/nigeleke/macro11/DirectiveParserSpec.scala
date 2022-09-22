@@ -11,12 +11,12 @@ import org.scalatestplus.scalacheck.*
 
 class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
 
-  object ParserUnderTest extends DirectiveParser with InstructionParser
+  object ParserUnderTest extends DirectiveParser with InstructionParser with UtilityParser
   import ParserUnderTest.*
 
   "The DirectiveParser" should {
 
-    given noShrink[T]: Shrink[T] = Shrink[T](_ => Stream.empty)
+    given Shrink[String] = Shrink(_ => Stream.empty)
     import Generators.*
 
     def parseAndCheckResult(i: String, expectedDirective: Directive) =
@@ -45,17 +45,18 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
 
     def testSingleExpressionDirective[T](
         directive: String,
-        genExpression: Gen[T],
+        genExpression: Gen[String],
+        toT: String => T,
         expectedDirective: (T, Comment) => Directive
     ) =
       forAll(genExpression, genComment) { (s, comment) =>
-        parseAndCheckResult(s"$directive $s$comment", expectedDirective(s, Comment(comment)))
+        parseAndCheckResult(s"$directive $s$comment", expectedDirective(toT(s), Comment(comment)))
       }
 
-    def testSingleOptionalExpressionDirective(
+    def testSingleOptionalExpressionDirective[T](
         directive: String,
-        genMaybeExpression: Gen[Option[String]],
-        expectedDirective: (Option[String], Comment) => Directive
+        genMaybeExpression: Gen[Option[T]],
+        expectedDirective: (Option[T], Comment) => Directive
     ) =
       forAll(genMaybeExpression, genComment) { (maybeS, comment) =>
         val s = maybeS.getOrElse("")
@@ -71,8 +72,6 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       forAll(genItems, genComment) { (items, comment) =>
         val itemsAsString = items.mkString(", ")
         val expectedItems = items.map(toT)
-        println(s"Items: $items")
-        println(s"Expct: $expectedItems")
         parseAndCheckResult(s"$directive $itemsAsString$comment", expectedDirective(expectedItems, Comment(comment)))
       }
 
@@ -87,6 +86,9 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
         require(s.endsWith(">"))
         s.substring(1, s.length - 1)
 
+    val stringToExpression: String => Expression                 = ParserUnderTest.parse(ParserUnderTest.expression, _).get
+    val stringToEnablDsablArgument: String => EnablDsablArgument = EnablDsablArgument.valueOf(_)
+
     "parse .ASCII directive" when {
       testDelimitedStringDirective(".ASCII", genSimpleDelimitedString, (s, c) => AsciiDirective(DelimitedString(s), c))
     }
@@ -100,15 +102,15 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .BLKB directive" in {
-      testSingleExpressionDirective(".BLKB", genNumericExpression, BlkbDirective(_, _))
+      testSingleExpressionDirective(".BLKB", genExpression, stringToExpression, BlkbDirective(_, _))
     }
 
     "parse .BLKW directive" in {
-      testSingleExpressionDirective(".BLKW", genNumericExpression, BlkwDirective(_, _))
+      testSingleExpressionDirective(".BLKW", genExpression, stringToExpression, BlkwDirective(_, _))
     }
 
     "parse .BYTE directive" in {
-      testSingleListDirective(".BYTE", genExpressionList, identity, ByteDirective(_, _))
+      testSingleListDirective(".BYTE", genExpressionList, stringToExpression, ByteDirective(_, _))
     }
 
     "parse .CROSS directive" in {
@@ -116,19 +118,20 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .CSECT directive" in {
-      testSingleExpressionDirective(".CSECT", genRad50Symbol, CSectDirective(_, _))
+      testSingleExpressionDirective(".CSECT", genRad50Symbol, identity, CSectDirective(_, _))
     }
 
     "parse .DSABL directive" in {
-      testSingleExpressionDirective(".DSABL", genDsablEnablArgument, (a, c) => DsablDirective(EnablDsablArgument.valueOf(a), c))
+      testSingleExpressionDirective(".DSABL", genDsablEnablArgument, stringToEnablDsablArgument, DsablDirective(_, _))
     }
 
     "parse .ENABL directive" in {
-      testSingleExpressionDirective(".ENABL", genDsablEnablArgument, (a, c) => EnablDirective(EnablDsablArgument.valueOf(a), c))
+      testSingleExpressionDirective(".ENABL", genDsablEnablArgument, stringToEnablDsablArgument, EnablDirective(_, _))
     }
 
     "parse .END directive" in {
-      testSingleExpressionDirective(".END", genSymbol, EndDirective(_, _))
+      val stringToExpression: String => Expression = ParserUnderTest.parse(ParserUnderTest.expression, _).get
+      testSingleOptionalExpressionDirective(".END", genExpressionOption, (s, c) => EndDirective(s.map(stringToExpression), c))
     }
 
     "parse .ENDC directive" in {
@@ -156,10 +159,21 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .IF directive" when {
+      "condition is oneOf B NB" in {
+        val genCondition = Gen.oneOf("B", "NB")
+        forAll(genCondition, genMacroArgument, genComment) { (cond, ma, comment) =>
+          val expectedArgument  = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma).get
+          val expectedDirective = IfDirectiveBlank(cond, expectedArgument, Comment(comment))
+          parseAndCheckResult(s".IF $cond, $ma $comment", expectedDirective)
+        }
+      }
+
       "condition is oneOf EQ NE LT LE GE GT" in {
         val genCondition = Gen.oneOf("EQ", "NE", "LT", "LE", "GE", "GT")
         forAll(genCondition, genExpression, genComment) { (cond, e, comment) =>
-          parseAndCheckResult(s".IF $cond, $e $comment", IfDirective(cond, List(e), Comment(comment)))
+          val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, e).get
+          val expectedDirective  = IfDirectiveCompare(cond, expectedExpression, Comment(comment))
+          parseAndCheckResult(s".IF $cond, $e $comment", expectedDirective)
         }
       }
 
@@ -167,24 +181,18 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       "condition is oneOf DF NDF" in {
         val genCondition = Gen.oneOf("DF", "NDF")
         forAll(genCondition, genSymbol, genComment) { (cond, s, comment) =>
-          parseAndCheckResult(s".IF $cond, $s $comment", IfDirective(cond, List(s), Comment(comment)))
-        }
-      }
-
-      "condition is oneOf B NB" in {
-        val genCondition = Gen.oneOf("B", "NB")
-        forAll(genCondition, genMacroArgument, genComment) { (cond, ma, comment) =>
-          parseAndCheckResult(s".IF $cond, $ma $comment", IfDirective(cond, List(ma.trimmedMacroArgument), Comment(comment)))
+          val expectedDirective = IfDirectiveDefined(cond, s, Comment(comment))
+          parseAndCheckResult(s".IF $cond, $s $comment", expectedDirective)
         }
       }
 
       "condition is oneOf IDN DIF" in {
         val genCondition = Gen.oneOf("IDN", "DIF")
         forAll(genCondition, genMacroArgument, genMacroArgument, genComment) { (cond, ma1, ma2, comment) =>
-          parseAndCheckResult(
-            s".IF $cond, $ma1, $ma2 $comment",
-            IfDirective(cond, List(ma1.trimmedMacroArgument, ma2.trimmedMacroArgument), Comment(comment))
-          )
+          val expectedArgument1 = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma1).get
+          val expectedArgument2 = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma2).get
+          val expectedDirective = IfDirectiveIdentical(cond, expectedArgument1, expectedArgument2, Comment(comment))
+          parseAndCheckResult(s".IF $cond, $ma1, $ma2 $comment", expectedDirective)
         }
       }
     }
@@ -203,11 +211,23 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
 
     "parse .IIF directive" when {
 
+      "condition is oneOf B NB" in {
+        val genCondition = Gen.oneOf("B", "NB")
+        forAll(genCondition, genMacroArgument, genInstruction, genComment) { (cond, ma, i, comment) =>
+          val expectedArgument    = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma).get
+          val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
+          val expectedDirective   = IifDirectiveBlank(cond, expectedArgument, expectedInstruction, Comment(comment))
+          parseAndCheckResult(s".IIF $cond, $ma, $i $comment", expectedDirective)
+        }
+      }
+
       "condition is oneOf EQ NE LT LE GE GT" in {
         val genCondition = Gen.oneOf("EQ", "NE", "LT", "LE", "GE", "GT")
         forAll(genCondition, genExpression, genInstruction, genComment) { (cond, e, i, comment) =>
+          val expectedExpression  = ParserUnderTest.parse(ParserUnderTest.expression, e).get
           val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
-          parseAndCheckResult(s".IIF $cond, $e, $i $comment", IifDirective(cond, List(e), expectedInstruction, Comment(comment)))
+          val expectedDirective   = IifDirectiveCompare(cond, expectedExpression, expectedInstruction, Comment(comment))
+          parseAndCheckResult(s".IIF $cond, $e, $i $comment", expectedDirective)
         }
       }
 
@@ -216,34 +236,20 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
         val genCondition = Gen.oneOf("DF", "NDF")
         forAll(genCondition, genSymbol, genInstruction, genComment) { (cond, s, i, comment) =>
           val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
-          parseAndCheckResult(s".IIF $cond, $s, $i $comment", IifDirective(cond, List(s), expectedInstruction, Comment(comment)))
-        }
-      }
-
-      "condition is oneOf B NB" in {
-        val genCondition = Gen.oneOf("B", "NB")
-        forAll(genCondition, genMacroArgument, genInstruction, genComment) { (cond, ma, i, comment) =>
-          val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
-          parseAndCheckResult(
-            s".IIF $cond, $ma, $i $comment",
-            IifDirective(cond, List(ma.trimmedMacroArgument), expectedInstruction, Comment(comment))
-          )
+          val expectedDirective   = IifDirectiveDefined(cond, s, expectedInstruction, Comment(comment))
+          parseAndCheckResult(s".IIF $cond, $s, $i $comment", expectedDirective)
         }
       }
 
       "condition is oneOf IDN DIF" in {
         val genCondition = Gen.oneOf("IDN", "DIF")
         forAll(genCondition, genMacroArgument, genMacroArgument, genInstruction, genComment) { (cond, ma1, ma2, i, comment) =>
+          val expectedArgument1   = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma1).get
+          val expectedArgument2   = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma2).get
           val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
-          parseAndCheckResult(
-            s".IIF $cond, $ma1, $ma2, $i $comment",
-            IifDirective(
-              cond,
-              List(ma1.trimmedMacroArgument, ma2.trimmedMacroArgument),
-              expectedInstruction,
-              Comment(comment)
-            )
-          )
+          val expectedDirective =
+            IifDirectiveIdentical(cond, expectedArgument1, expectedArgument2, expectedInstruction, Comment(comment))
+          parseAndCheckResult(s".IIF $cond, $ma1, $ma2, $i $comment", expectedDirective)
         }
       }
     }
@@ -261,13 +267,13 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .LIST directive" in {
-      testSingleOptionalExpressionDirective(".LIST", genMaybeSymbol, ListDirective(_, _))
+      testSingleOptionalExpressionDirective(".LIST", genSymbolOption, ListDirective(_, _))
     }
 
     "parse .MACRO directive" when {}
 
     "parse .NLIST directive" in {
-      testSingleOptionalExpressionDirective(".NLIST", genMaybeSymbol, NListDirective(_, _))
+      testSingleOptionalExpressionDirective(".NLIST", genSymbolOption, NListDirective(_, _))
     }
 
     "parse .NOCROSS directive" in {
@@ -279,7 +285,7 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .PACKED directive" in {
-      forAll(genDecimalString, genMaybeSymbol, genComment) { (d, maybeS, comment) =>
+      forAll(genDecimalString, genSymbolOption, genComment) { (d, maybeS, comment) =>
         val s = maybeS.map(s => s", $s").getOrElse("")
         parseAndCheckResult(s".PACKED $d$s$comment", PackedDirective(d, maybeS, Comment(comment)))
       }
@@ -340,7 +346,7 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .WORD directive" in {
-      testSingleListDirective(".WORD", genExpressionList, identity, WordDirective(_, _))
+      testSingleListDirective(".WORD", genExpressionList, stringToExpression, WordDirective(_, _))
     }
 
   }

@@ -63,7 +63,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       }
 
       "+labels-instruction-comment" in {
-        forAll(genLabels) { ls =>
+        forAll(genLabelList) { ls =>
           val expectedLabels = ls.map(_.toLabel)
           val lsString       = ls.mkString(" ")
           parseAndCheckResult(lsString, Statement(expectedLabels, None, Comment("")))
@@ -71,7 +71,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       }
 
       "+labels-instruction+comment" in {
-        forAll(genLabels, genComment) { (ls, c) =>
+        forAll(genLabelList, genComment) { (ls, c) =>
           val expectedLabels = ls.map(_.toLabel)
           val lsString       = ls.mkString(" ")
           parseAndCheckResult(s"$lsString $c", Statement(expectedLabels, None, Comment(c)))
@@ -79,7 +79,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       }
 
       "+labels+instruction-comment" in {
-        forAll(genLabels, genInstruction) { (ls, i) =>
+        forAll(genLabelList, genInstruction) { (ls, i) =>
           val expectedLabels      = ls.map(_.toLabel)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")
@@ -88,7 +88,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       }
 
       "+labels+instruction+comment" in {
-        forAll(genLabels, genInstruction, genComment) { (ls, i, c) =>
+        forAll(genLabelList, genInstruction, genComment) { (ls, i, c) =>
           val expectedLabels      = ls.map(_.toLabel)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")

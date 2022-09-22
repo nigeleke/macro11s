@@ -2,9 +2,9 @@ package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.ast.Instruction.*
-
 import org.scalacheck.*
 import org.scalacheck.Prop.*
+import org.scalacheck.Test.Parameters.defaultVerbose.minSize
 
 object Generators:
   // Utility...
@@ -18,28 +18,57 @@ object Generators:
 
   val genSymbol =
     val symbolCharacters = Gen.oneOf(('A' to 'Z') ++ ('a' to 'z') ++ ('0' to '9') ++ Seq('$', '.'))
-    for symbol <- Gen.nonEmptyListOf(symbolCharacters)
+    for symbol <- Gen.nonEmptyListOf(symbolCharacters).suchThat(s => !('0' to '9').contains(s.head))
     yield s"${symbol.mkString}"
-  val genMaybeSymbol = Gen.option(genSymbol)
-  val genSymbolsList = Gen.nonEmptyListOf(genSymbol)
+  val genSymbolOption = Gen.option(genSymbol)
+  val genSymbolsList  = Gen.nonEmptyListOf(genSymbol)
 
   def genStringWithout(c: Char) = Gen.asciiPrintableStr.retryUntil(s => !s.contains(c))
 
   // Operands...
   val genRegister = Gen.oneOf((0 to 7).map(r => s"%$r") ++ (0 to 5).map(r => s"R$r") ++ Seq("SP", "PC"))
 
-  // TODO: Make these expressions actual expressions.
-  // TODO: Amend instructions to use Expressions / RegisterExpressions
-  // TODO: Amend directives to use Expressions (.ASCII etc)
-  val genExpression        = genSymbol
-  val genExpressionList    = Gen.nonEmptyListOf(genExpression)
-  val genNumericExpression = genSymbol
-  val genMacroArgument =
+  val genBinaryOperator = Gen.oneOf("+", "-", "*", "/")
+  val genUnaryOperator  = Gen.oneOf("+", "-")
+
+  val genNumericTerm = Gen.numStr
+  val genSymbolTerm  = Gen.oneOf(genSymbol, Gen.const("."))
+  val genSingleQuoteTerm =
+    for char <- Gen.asciiPrintableChar.suchThat(_ != ' ')
+    yield s"'$char"
+  val genDoubleQuoteTerm =
     for
-      lt  <- Gen.const('<')
-      gt  <- Gen.const('>')
-      arg <- genStringWithout(gt)
-    yield s"$lt$arg$gt"
+      char1 <- Gen.asciiPrintableChar.suchThat(_ != ' ')
+      char2 <- Gen.asciiPrintableChar.suchThat(_ != ' ')
+    yield s"\"$char1$char2"
+  val genUnaryOperatorTerm =
+    for
+      operator <- genUnaryOperator
+      operand  <- Gen.oneOf(Gen.numStr, genSymbol).suchThat((_.nonEmpty))
+    yield s"$operator$operand"
+  val genTerm =
+    Gen.oneOf(genNumericTerm, genSymbolTerm, genSingleQuoteTerm, genDoubleQuoteTerm, genUnaryOperatorTerm).suchThat(_.nonEmpty)
+
+  val genBinaryOperatorExpression =
+    for
+      operator <- genBinaryOperator
+      lhs      <- genTerm
+      rhs      <- genTerm
+    yield (s"$lhs$operator$rhs")
+  val genSimpleExpression = genTerm
+  val genExpression       = Gen.oneOf(genBinaryOperatorExpression, genSimpleExpression).suchThat(_.nonEmpty)
+  val genExpressionTerm =
+    for
+      lt         <- Gen.const('<')
+      gt         <- Gen.const('>')
+      expression <- genExpression
+    yield s"$lt$expression$gt"
+  val genExpressionOption = Gen.option(genExpression)
+  val genExpressionList   = Gen.nonEmptyListOf(genExpression)
+
+  val genNumericExpression = genSymbol
+  val genMacroArgument     = genExpressionTerm
+
 
   // format: off
   val genAddressingModeOperand =
@@ -90,7 +119,7 @@ object Generators:
       label  <- genSymbol
       suffix <- Gen.oneOf(Seq(":", "::"))
     yield s"$label$suffix"
-  val genLabels = Gen.listOf(genLabel)
+  val genLabelList = Gen.listOf(genLabel)
 
   // Directives...
   val genDecimalString =
@@ -133,3 +162,13 @@ object Generators:
       d <- stringDelimiter
       s <- genStringWithout(d)
     yield s"$d$s$d"
+
+  // Program...
+  val genStatement =
+    for
+      labels      <- genLabelList.map(_.mkString(""))
+      instruction <- genInstruction
+      comment     <- genComment
+    yield s"$labels$instruction$comment"
+
+  val genDirective = Gen.const(".TITLE Macro11Parser")
