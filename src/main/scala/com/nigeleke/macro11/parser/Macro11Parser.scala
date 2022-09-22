@@ -8,4 +8,4 @@ import scala.util.parsing.combinator.*
 trait Macro11Parser extends DirectiveParser with StatementParser with UtilityParser with RegexParsers:
 
   private def line = directive ||| statement
-  def program      = repsep(line, "\n") ^^ { Program(_) }
+  def program: Parser[Program] = repsep(line, "\n") ^^ { Program.apply }

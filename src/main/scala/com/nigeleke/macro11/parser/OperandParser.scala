@@ -12,22 +12,22 @@ trait OperandParser extends UtilityParser with RegexParsers:
     rest.foldLeft(first)((rs, r) => { rs ||| r })
 
   private def registerMode =
-    register ^^ { Operand.RegisterMode(_) }
+    register ^^ { Operand.RegisterMode.apply }
 
   private def registerDeferredMode =
-    (("@" ~> register) | ("(" ~> register <~ ")")) ^^ { Operand.RegisterDeferredMode(_) }
+    (("@" ~> register) | ("(" ~> register <~ ")")) ^^ { Operand.RegisterDeferredMode.apply }
 
   private def autoIncrementMode =
-    "(" ~> register <~ ")+" ^^ { Operand.AutoIncrementMode(_) }
+    "(" ~> register <~ ")+" ^^ { Operand.AutoIncrementMode.apply }
 
   private def autoIncrementDeferredMode =
-    "@(" ~> register <~ ")+" ^^ { Operand.AutoIncrementDeferredMode(_) }
+    "@(" ~> register <~ ")+" ^^ { Operand.AutoIncrementDeferredMode.apply }
 
   private def autoDecrementMode =
-    "-(" ~> register <~ ")" ^^ { Operand.AutoDecrementMode(_) }
+    "-(" ~> register <~ ")" ^^ { Operand.AutoDecrementMode.apply }
 
   private def autoDecrementDeferredMode =
-    "@-(" ~> register <~ ")" ^^ { Operand.AutoDecrementDeferredMode(_) }
+    "@-(" ~> register <~ ")" ^^ { Operand.AutoDecrementDeferredMode.apply }
 
   private def indexMode =
     symbol ~ ("(" ~> register <~ ")") ^^ { case s ~ r => Operand.IndexMode(s, r) }
@@ -36,16 +36,16 @@ trait OperandParser extends UtilityParser with RegexParsers:
     "@" ~> symbol ~ ("(" ~> register <~ ")") ^^ { case s ~ r => Operand.IndexDeferredMode(s, r) }
 
   private def immediateMode =
-    "#" ~> symbol ^^ { Operand.ImmediateMode(_) }
+    "#" ~> symbol ^^ { Operand.ImmediateMode.apply }
 
   private def absoluteMode =
-    "@#" ~> symbol ^^ { Operand.AbsoluteMode(_) }
+    "@#" ~> symbol ^^ { Operand.AbsoluteMode.apply }
 
   private def relativeMode =
-    symbol ^^ { Operand.RelativeMode(_) }
+    symbol ^^ { Operand.RelativeMode.apply }
 
   private def relativeDeferredMode =
-    "@" ~> symbol ^^ { Operand.RelativeDeferredMode(_) }
+    "@" ~> symbol ^^ { Operand.RelativeDeferredMode.apply }
 
   def addressingModeOperand: Parser[Operand.AddressingModeOperand] =
     registerMode ||| registerDeferredMode |||
@@ -56,13 +56,13 @@ trait OperandParser extends UtilityParser with RegexParsers:
       relativeMode ||| relativeDeferredMode
 
   def addressOffsetOperand: Parser[Operand.AddressOffsetOperand] =
-    symbol ^^ { Operand.AddressOffsetOperand(_) }
+    symbol ^^ { Operand.AddressOffsetOperand.apply }
 
   def registerOperand: Parser[Operand.RegisterOperand] =
-    register ^^ { Operand.RegisterOperand(_) }
+    register ^^ { Operand.RegisterOperand.apply }
 
   def parameterCountOperand: Parser[Operand.ParameterCountOperand] =
-    symbol ^^ { Operand.ParameterCountOperand(_) }
+    symbol ^^ { Operand.ParameterCountOperand.apply }
 
   def trapParameterOperand: Parser[Operand.TrapParameterOperand] =
-    symbol ^^ { Operand.TrapParameterOperand(_) }
+    symbol ^^ { Operand.TrapParameterOperand.apply }

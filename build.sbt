@@ -4,7 +4,7 @@ Compile / doc / scalacOptions := Seq("-groups")
 
 val scalaParserCombinatorVersion = "2.1.1"
 val scalaTestVersion             = "3.2.13"
-val scalaCheckVersion            = "3.2.13.0"
+val scalaCheckVersion            = "1.17.0"
 
 lazy val root = project
   .in(file("."))
@@ -16,6 +16,6 @@ lazy val root = project
       "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorVersion,
       "org.scalactic"          %% "scalactic"                % scalaTestVersion,
       "org.scalatest"          %% "scalatest"                % scalaTestVersion  % "test",
-      "org.scalatestplus"      %% "scalacheck-1-16"          % scalaCheckVersion % "test"
+      "org.scalacheck"         %% "scalacheck"               % scalaCheckVersion % "test"
     )
   )

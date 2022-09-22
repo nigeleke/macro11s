@@ -4,24 +4,21 @@ import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.parser.UtilityParser
 import org.scalacheck.*
 import org.scalacheck.Prop.*
-import org.scalacheck.Shrink
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.scalacheck.*
 
 import java.util.function.BinaryOperator
 
-class UtilityParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
+class UtilityParserSpec extends AnyWordSpec with Matchers:
 
   object ParserUnderTest extends UtilityParser:
-    def optionalSymbolComment = opt(symbol) ~ comment ^^ { case s ~ c => (s, c) }
+    def optionalSymbolComment: Parser[(Option[String], Comment)] = opt(symbol) ~ comment ^^ { case s ~ c => (s, c) }
 
   import ParserUnderTest.*
 
   "The UtilityParser" should {
 
-    given Shrink[String] = Shrink(_ => Stream.empty)
-    import Generators.*
+    import com.nigeleke.macro11.Generators.*
 
     "parse symbol" when {
       "only symbol" in {

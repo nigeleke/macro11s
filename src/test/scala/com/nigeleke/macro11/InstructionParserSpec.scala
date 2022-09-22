@@ -9,17 +9,15 @@ import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
-import org.scalatestplus.scalacheck.*
 
-class InstructionParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
+class InstructionParserSpec extends AnyWordSpec with Matchers:
 
   object ParserUnderTest extends InstructionParser
   import ParserUnderTest.*
 
   "The InstructionParser" should {
 
-    given Shrink[String] = Shrink(_ => Stream.empty)
-    import Generators.*
+    import com.nigeleke.macro11.Generators.*
 
     def parseAndCheckResult(i: String, mnemonic: String, expectedParams: Seq[Operand]) =
       val expectedMnemonic = Mnemonic.valueOf(mnemonic)

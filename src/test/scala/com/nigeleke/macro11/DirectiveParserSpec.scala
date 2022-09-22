@@ -7,17 +7,15 @@ import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
-import org.scalatestplus.scalacheck.*
 
-class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
+class DirectiveParserSpec extends AnyWordSpec with Matchers:
 
   object ParserUnderTest extends DirectiveParser with InstructionParser with UtilityParser
   import ParserUnderTest.*
 
   "The DirectiveParser" should {
 
-    given Shrink[String] = Shrink(_ => Stream.empty)
-    import Generators.*
+    import com.nigeleke.macro11.Generators.*
 
     def parseAndCheckResult(i: String, expectedDirective: Directive) =
       ParserUnderTest.parse(ParserUnderTest.directive, i) match
@@ -29,7 +27,7 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
         directive: String,
         genContent: Gen[String],
         expectedDirective: (String, Comment) => Directive
-    ) =
+    ): Unit =
       "simple string" in {
         forAll(genContent, genComment) { (content, comment) =>
           parseAndCheckResult(s"$directive $content $comment", expectedDirective(content, Comment(comment)))
@@ -80,14 +78,8 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
         parseAndCheckResult(s"$directive$comment", expectedDirective(Comment(comment)))
       }
 
-    extension (s: String)
-      def trimmedMacroArgument: String =
-        require(s.startsWith("<"))
-        require(s.endsWith(">"))
-        s.substring(1, s.length - 1)
-
     val stringToExpression: String => Expression                 = ParserUnderTest.parse(ParserUnderTest.expression, _).get
-    val stringToEnablDsablArgument: String => EnablDsablArgument = EnablDsablArgument.valueOf(_)
+    val stringToEnablDsablArgument: String => EnablDsablArgument = EnablDsablArgument.valueOf
 
     "parse .ASCII directive" when {
       testDelimitedStringDirective(".ASCII", genSimpleDelimitedString, (s, c) => AsciiDirective(DelimitedString(s), c))
@@ -98,35 +90,35 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .ASECT directive" in {
-      testNoParametersDirective(".ASECT", ASectDirective(_))
+      testNoParametersDirective(".ASECT", ASectDirective.apply)
     }
 
     "parse .BLKB directive" in {
-      testSingleExpressionDirective(".BLKB", genExpression, stringToExpression, BlkbDirective(_, _))
+      testSingleExpressionDirective(".BLKB", genExpression, stringToExpression, BlkbDirective.apply)
     }
 
     "parse .BLKW directive" in {
-      testSingleExpressionDirective(".BLKW", genExpression, stringToExpression, BlkwDirective(_, _))
+      testSingleExpressionDirective(".BLKW", genExpression, stringToExpression, BlkwDirective.apply)
     }
 
     "parse .BYTE directive" in {
-      testSingleListDirective(".BYTE", genExpressionList, stringToExpression, ByteDirective(_, _))
+      testSingleListDirective(".BYTE", genExpressionList, stringToExpression, ByteDirective.apply)
     }
 
     "parse .CROSS directive" in {
-      testSingleListDirective(".CROSS", genSymbolsList, identity, CrossDirective(_, _))
+      testSingleListDirective(".CROSS", genSymbolsList, identity, CrossDirective.apply)
     }
 
     "parse .CSECT directive" in {
-      testSingleExpressionDirective(".CSECT", genRad50Symbol, identity, CSectDirective(_, _))
+      testSingleExpressionDirective(".CSECT", genRad50Symbol, identity, CSectDirective.apply)
     }
 
     "parse .DSABL directive" in {
-      testSingleExpressionDirective(".DSABL", genDsablEnablArgument, stringToEnablDsablArgument, DsablDirective(_, _))
+      testSingleExpressionDirective(".DSABL", genDsablEnablArgument, stringToEnablDsablArgument, DsablDirective.apply)
     }
 
     "parse .ENABL directive" in {
-      testSingleExpressionDirective(".ENABL", genDsablEnablArgument, stringToEnablDsablArgument, EnablDirective(_, _))
+      testSingleExpressionDirective(".ENABL", genDsablEnablArgument, stringToEnablDsablArgument, EnablDirective.apply)
     }
 
     "parse .END directive" in {
@@ -135,23 +127,23 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .ENDC directive" in {
-      testNoParametersDirective(".ENDC", EndcDirective(_))
+      testNoParametersDirective(".ENDC", EndcDirective.apply)
     }
 
     "parse .EVEN directive" in {
-      testNoParametersDirective(".EVEN", EvenDirective(_))
+      testNoParametersDirective(".EVEN", EvenDirective.apply)
     }
 
     "parse .FLT2 directive" in {
-      testFloatingPointStorageDirective(".FLT2", Flt2Directive(_, _))
+      testFloatingPointStorageDirective(".FLT2", Flt2Directive.apply)
     }
 
     "parse .FLT4 directive" in {
-      testFloatingPointStorageDirective(".FLT4", Flt4Directive(_, _))
+      testFloatingPointStorageDirective(".FLT4", Flt4Directive.apply)
     }
 
     "parse .GLOBL directive" in {
-      testSingleListDirective(".GLOBAL", genSymbolsList, identity, GlobalDirective(_, _))
+      testSingleListDirective(".GLOBAL", genSymbolsList, identity, GlobalDirective.apply)
     }
 
     "parse .IDENT directive" when {
@@ -198,15 +190,15 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .IFF directive" in {
-      testNoParametersDirective(".IFF", IffDirective(_))
+      testNoParametersDirective(".IFF", IffDirective.apply)
     }
 
     "parse .IFT directive" in {
-      testNoParametersDirective(".IFT", IftDirective(_))
+      testNoParametersDirective(".IFT", IftDirective.apply)
     }
 
     "parse .IFTF directive" in {
-      testNoParametersDirective(".IFTF", IftfDirective(_))
+      testNoParametersDirective(".IFTF", IftfDirective.apply)
     }
 
     "parse .IIF directive" when {
@@ -263,36 +255,36 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .LIMIT directive" in {
-      testNoParametersDirective(".LIMIT", LimitDirective(_))
+      testNoParametersDirective(".LIMIT", LimitDirective.apply)
     }
 
     "parse .LIST directive" in {
-      testSingleOptionalExpressionDirective(".LIST", genSymbolOption, ListDirective(_, _))
+      testSingleOptionalExpressionDirective(".LIST", genSymbolOption, ListDirective.apply)
     }
 
     "parse .MACRO directive" when {}
 
     "parse .NLIST directive" in {
-      testSingleOptionalExpressionDirective(".NLIST", genSymbolOption, NListDirective(_, _))
+      testSingleOptionalExpressionDirective(".NLIST", genSymbolOption, NListDirective.apply)
     }
 
     "parse .NOCROSS directive" in {
-      testSingleListDirective(".NOCROSS", genSymbolsList, identity, NoCrossDirective(_, _))
+      testSingleListDirective(".NOCROSS", genSymbolsList, identity, NoCrossDirective.apply)
     }
 
     "parse .ODD directive" in {
-      testNoParametersDirective(".ODD", OddDirective(_))
+      testNoParametersDirective(".ODD", OddDirective.apply)
     }
 
     "parse .PACKED directive" in {
       forAll(genDecimalString, genSymbolOption, genComment) { (d, maybeS, comment) =>
-        val s = maybeS.map(s => s", $s").getOrElse("")
+        val s = maybeS.fold("")(s => s", $s")
         parseAndCheckResult(s".PACKED $d$s$comment", PackedDirective(d, maybeS, Comment(comment)))
       }
     }
 
     "parse .PAGE directive" in {
-      testNoParametersDirective(".PAGE", PageDirective(_))
+      testNoParametersDirective(".PAGE", PageDirective.apply)
     }
 
     "parse .PSECT directive" in {
@@ -320,11 +312,11 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .RESTORE directive" in {
-      testNoParametersDirective(".RESTORE", RestoreDirective(_))
+      testNoParametersDirective(".RESTORE", RestoreDirective.apply)
     }
 
     "parse .SAVE directive" in {
-      testNoParametersDirective(".SAVE", SaveDirective(_))
+      testNoParametersDirective(".SAVE", SaveDirective.apply)
     }
 
     "parse .SBTTL directive" in {
@@ -342,11 +334,11 @@ class DirectiveParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
     }
 
     "parse .WEAK directive" in {
-      testSingleListDirective(".WEAK", genSymbolsList, identity, WeakDirective(_, _))
+      testSingleListDirective(".WEAK", genSymbolsList, identity, WeakDirective.apply)
     }
 
     "parse .WORD directive" in {
-      testSingleListDirective(".WORD", genExpressionList, stringToExpression, WordDirective(_, _))
+      testSingleListDirective(".WORD", genExpressionList, stringToExpression, WordDirective.apply)
     }
 
   }

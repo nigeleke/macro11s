@@ -2,23 +2,20 @@ package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.parser.*
-
 import org.scalacheck.*
 import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
-import org.scalatestplus.scalacheck.*
 
-class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
+class StatementParserSpec extends AnyWordSpec with Matchers:
 
   object ParserUnderTest extends StatementParser
   import ParserUnderTest.*
 
   "The Statement parser" should {
 
-    given Shrink[String] = Shrink(s => Stream.empty)
-    import Generators.*
+    import com.nigeleke.macro11.Generators.*
 
     def parseAndCheckResult(s: String, expectedStatement: Statement) =
       ParserUnderTest.parse(ParserUnderTest.statement, s) match
@@ -51,14 +48,14 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
       "-labels+instruction-comment" in {
         forAll(genInstruction) { i =>
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
-          parseAndCheckResult(i, Statement(List.empty, Some(expectedInstruction), Comment("")))
+          parseAndCheckResult(i, Statement(List.empty, Option(expectedInstruction), Comment("")))
         }
       }
 
       "-labels+instruction+comment" in {
         forAll(genInstruction, genComment) { (i, c) =>
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
-          parseAndCheckResult(s"$i $c", Statement(List.empty, Some(expectedInstruction), Comment(c)))
+          parseAndCheckResult(s"$i $c", Statement(List.empty, Option(expectedInstruction), Comment(c)))
         }
       }
 
@@ -83,7 +80,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
           val expectedLabels      = ls.map(_.toLabel)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")
-          parseAndCheckResult(s"$lsString $i", Statement(expectedLabels, Some(expectedInstruction), Comment("")))
+          parseAndCheckResult(s"$lsString $i", Statement(expectedLabels, Option(expectedInstruction), Comment("")))
         }
       }
 
@@ -92,7 +89,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCheck
           val expectedLabels      = ls.map(_.toLabel)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")
-          parseAndCheckResult(s"$lsString $i $c", Statement(expectedLabels, Some(expectedInstruction), Comment(c)))
+          parseAndCheckResult(s"$lsString $i $c", Statement(expectedLabels, Option(expectedInstruction), Comment(c)))
         }
       }
     }

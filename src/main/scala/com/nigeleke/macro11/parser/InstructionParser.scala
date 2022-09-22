@@ -14,7 +14,7 @@ trait InstructionParser extends OperandParser with RegexParsers:
       .filter(_.fits(roles: _*))
       .map(_.toString ^^ { identity }): @unchecked
     val parser = rest.foldLeft(first)((ms, m) => ms ||| m)
-    parser ^^ { Instruction.Mnemonic.valueOf(_) }
+    parser ^^ { Instruction.Mnemonic.valueOf }
 
   private def noOperandInstruction =
     val validMnemonics = mnemonicForRoles()
@@ -58,7 +58,7 @@ trait InstructionParser extends OperandParser with RegexParsers:
     val validMnemonics = mnemonicForRoles(OperandRole.Register)
     validMnemonics ~ registerOperand ^^ { case i ~ r => Instruction(i, Seq(r)) }
 
-  def instruction =
+  def instruction: Parser[Instruction] =
     noOperandInstruction ||| destinationOperandInstruction |||
       sourceDestinationOperandInstruction ||| addressOffsetInstruction |||
       registerAddressOffsetInstruction ||| registerDestinationInstruction |||

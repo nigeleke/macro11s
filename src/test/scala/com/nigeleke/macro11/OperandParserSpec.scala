@@ -7,17 +7,15 @@ import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
-import org.scalatestplus.scalacheck.*
 
-class AddressingModeOperandParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
+class OperandParserSpec extends AnyWordSpec with Matchers:
 
   object ParserUnderTest extends OperandParser
   import ParserUnderTest.*
 
   "The OperandParser" should {
 
-    given Shrink[String] = Shrink(_ => Stream.empty)
-    import Generators.*
+    import com.nigeleke.macro11.Generators.*
 
     def parseAndCheckResult(parser: Parser[Operand], p: String, expectedOperand: Operand) =
       ParserUnderTest.parse(parser, p) match

@@ -117,4 +117,4 @@ object Instruction:
     case FMUL extends Mnemonic(OperandRole.Register)
     case FDIV extends Mnemonic(OperandRole.Register)
 
-    def fits(roles: OperandRole*) = roles.forall(operands.contains(_)) && roles.size == operands.size
+    def fits(roles: OperandRole*): Boolean = roles.forall(operands.contains(_)) && roles.size == operands.size

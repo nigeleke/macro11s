@@ -2,23 +2,20 @@ package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.parser.*
-
 import org.scalacheck.*
 import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
-import org.scalatestplus.scalacheck.*
 
-class Macro11ParserSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers:
+class Macro11ParserSpec extends AnyWordSpec with Matchers:
 
   object ParserUnderTest extends Macro11Parser with UtilityParser
   import ParserUnderTest.*
 
   "A Macro11Parser" should {
 
-    given Shrink[String] = Shrink(_ => Stream.empty)
-    import Generators.*
+    import com.nigeleke.macro11.Generators.*
 
     "parse from a string stream" in {
       ParserUnderTest.parse(ParserUnderTest.program, "\n") match
