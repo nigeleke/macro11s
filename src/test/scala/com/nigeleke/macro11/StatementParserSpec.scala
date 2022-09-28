@@ -2,13 +2,12 @@ package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.parser.*
-import org.scalacheck.*
-import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
+import org.scalatestplus.scalacheck.*
 
-class StatementParserSpec extends AnyWordSpec with Matchers:
+class StatementParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with Matchers:
 
   object ParserUnderTest extends StatementParser
   import ParserUnderTest.*
@@ -22,17 +21,6 @@ class StatementParserSpec extends AnyWordSpec with Matchers:
         case Success(result, _)  => result should be(expectedStatement)
         case Failure(message, _) => fail(message)
         case Error(error, _)     => fail(error)
-
-    extension (s: String)
-      def toLabel: Label =
-        if s.endsWith("::")
-        then GlobalLabel(s.stripTrailing(":"))
-        else LocalLabel(s.stripTrailing(":"))
-
-      def stripTrailing(tail: String): String =
-        if s.endsWith(tail)
-        then s.take(s.length - tail.length).stripTrailing(tail)
-        else s
 
     "decode statements" when {
       "-labels-instruction-comment - i.e. empty" in {
@@ -61,7 +49,7 @@ class StatementParserSpec extends AnyWordSpec with Matchers:
 
       "+labels-instruction-comment" in {
         forAll(genLabelList) { ls =>
-          val expectedLabels = ls.map(_.toLabel)
+          val expectedLabels = ls.map(Label.apply)
           val lsString       = ls.mkString(" ")
           parseAndCheckResult(lsString, Statement(expectedLabels, None, Comment("")))
         }
@@ -69,7 +57,7 @@ class StatementParserSpec extends AnyWordSpec with Matchers:
 
       "+labels-instruction+comment" in {
         forAll(genLabelList, genComment) { (ls, c) =>
-          val expectedLabels = ls.map(_.toLabel)
+          val expectedLabels = ls.map(Label.apply)
           val lsString       = ls.mkString(" ")
           parseAndCheckResult(s"$lsString $c", Statement(expectedLabels, None, Comment(c)))
         }
@@ -77,7 +65,7 @@ class StatementParserSpec extends AnyWordSpec with Matchers:
 
       "+labels+instruction-comment" in {
         forAll(genLabelList, genInstruction) { (ls, i) =>
-          val expectedLabels      = ls.map(_.toLabel)
+          val expectedLabels      = ls.map(Label.apply)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")
           parseAndCheckResult(s"$lsString $i", Statement(expectedLabels, Option(expectedInstruction), Comment("")))
@@ -86,7 +74,7 @@ class StatementParserSpec extends AnyWordSpec with Matchers:
 
       "+labels+instruction+comment" in {
         forAll(genLabelList, genInstruction, genComment) { (ls, i, c) =>
-          val expectedLabels      = ls.map(_.toLabel)
+          val expectedLabels      = ls.map(Label.apply)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")
           parseAndCheckResult(s"$lsString $i $c", Statement(expectedLabels, Option(expectedInstruction), Comment(c)))

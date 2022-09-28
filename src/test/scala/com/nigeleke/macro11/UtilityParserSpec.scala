@@ -2,14 +2,12 @@ package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.parser.UtilityParser
-import org.scalacheck.*
-import org.scalacheck.Prop.*
+import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.scalacheck.*
 
-import java.util.function.BinaryOperator
-
-class UtilityParserSpec extends AnyWordSpec with Matchers:
+class UtilityParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with Matchers:
 
   object ParserUnderTest extends UtilityParser:
     def optionalSymbolComment: Parser[(Option[String], Comment)] = opt(symbol) ~ comment ^^ { case s ~ c => (s, c) }

@@ -1,6 +1,7 @@
 package com.nigeleke.macro11.parser
 
 import com.nigeleke.macro11.ast.*
+import com.nigeleke.macro11.ast.directives.*
 import com.nigeleke.macro11.ast.Instruction.Mnemonic
 import com.nigeleke.macro11.ast.Instruction.OperandRole
 import com.nigeleke.macro11.parser.*
@@ -9,111 +10,111 @@ import scala.util.parsing.combinator.*
 
 trait DirectiveParser extends InstructionParser with UtilityParser:
 
-  private val delimitedString      = """(.)((?!\1).)*(\1)""".r ^^ { DelimitedString(_) }
-  private val delimitedRad50String = """(.)((?!\1)[A-Z0-9$. ])*(\1)""".r ^^ { DelimitedString(_) }
+  private val delimitedString      = """(.)((?!\1).)*(\1)""".r ^^ { DelimitedString.from }
+  private val delimitedRad50String = """(.)((?!\1)[A-Z0-9$. ])*(\1)""".r ^^ { DelimitedString.from }
   private val double               = """\d*(\.\d*)?""".r ^^ { BigDecimal(_) }
   private val digits               = """\d+""".r ^^ { identity }
   private val rad50Symbol          = """[A-Z0-9$.]*""".r ^^ { identity }
 
-  private def asciiDirective = exact(".ASCII") ~> delimitedString ~ comment ^^ { case s ~ c => AsciiDirective(s, c) }
-  private def ascizDirective = exact(".ASCIZ") ~> delimitedString ~ comment ^^ { case s ~ c => AscizDirective(s, c) }
-  private def asectDirective = exact(".ASECT") ~> comment ^^ { ASectDirective.apply }
-  private def blkbDirective  = exact(".BLKB") ~> expression ~ comment ^^ { case e ~ c => BlkbDirective(e, c) }
-  private def blkwDirective  = exact(".BLKW") ~> expression ~ comment ^^ { case e ~ c => BlkwDirective(e, c) }
+  private def asciiDirective = exact(".ASCII") ~> delimitedString ~ comment ^^ { case s ~ c => ASCII(s, c) }
+  private def ascizDirective = exact(".ASCIZ") ~> delimitedString ~ comment ^^ { case s ~ c => ASCIZ(s, c) }
+  private def asectDirective = exact(".ASECT") ~> comment ^^ { ASECT.apply }
+  private def blkbDirective  = exact(".BLKB") ~> expression ~ comment ^^ { case e ~ c => BLKB(e, c) }
+  private def blkwDirective  = exact(".BLKW") ~> expression ~ comment ^^ { case e ~ c => BLKW(e, c) }
   private def byteDirective = exact(".BYTE") ~> rep1sep(expression, separator) ~ comment ^^ { case es ~ c =>
-    ByteDirective(es, c)
+    BYTE(es, c)
   }
   private def crossDirective = exact(".CROSS") ~> repsep(symbol, separator) ~ comment ^^ { case ss ~ c =>
-    CrossDirective(ss, c)
+    CROSS(ss, c)
   }
-  private def csectDirective = exact(".CSECT") ~> rad50Symbol ~ comment ^^ { case n ~ c => CSectDirective(n, c) }
+  private def csectDirective = exact(".CSECT") ~> rad50Symbol ~ comment ^^ { case n ~ c => CSECT(n, c) }
   private def enablDsablArgument =
     val first :: rest = EnablDsablArgument.values.toList.map(_.toString ^^ identity): @unchecked
     rest.foldLeft(first)((es, e) => es ||| e) ^^ { EnablDsablArgument.valueOf }
-  private def dsablDirective = exact(".DSABL") ~> enablDsablArgument ~ comment ^^ { case a ~ c => DsablDirective(a, c) }
-  private def enablDirective = exact(".ENABL") ~> enablDsablArgument ~ comment ^^ { case a ~ c => EnablDirective(a, c) }
-  private def endDirective   = exact(".END") ~> opt(expression) ~ comment ^^ { case e ~ c => EndDirective(e, c) }
-  private def endcDirective  = exact(".ENDC") ~> comment ^^ { EndcDirective.apply }
-  private def evenDirective  = exact(".EVEN") ~> comment ^^ { EvenDirective.apply }
-  private def flt2Directive  = exact(".FLT2") ~> repsep(double, separator) ~ comment ^^ { case fs ~ c => Flt2Directive(fs, c) }
-  private def flt4Directive  = exact(".FLT4") ~> repsep(double, separator) ~ comment ^^ { case fs ~ c => Flt4Directive(fs, c) }
-  private def globalDirective = exact(".GLOBAL") ~> rep1sep(symbol, separator) ~ comment ^^ { case ss ~ c =>
-    GlobalDirective(ss, c)
+  private def dsablDirective = exact(".DSABL") ~> enablDsablArgument ~ comment ^^ { case a ~ c => DSABL(a, c) }
+  private def enablDirective = exact(".ENABL") ~> enablDsablArgument ~ comment ^^ { case a ~ c => ENABL(a, c) }
+  private def endDirective   = exact(".END") ~> opt(expression) ~ comment ^^ { case e ~ c => END(e, c) }
+  private def endcDirective  = exact(".ENDC") ~> comment ^^ { ENDC.apply }
+  private def evenDirective  = exact(".EVEN") ~> comment ^^ { EVEN.apply }
+  private def flt2Directive  = exact(".FLT2") ~> repsep(double, separator) ~ comment ^^ { case fs ~ c => FLT2(fs, c) }
+  private def flt4Directive  = exact(".FLT4") ~> repsep(double, separator) ~ comment ^^ { case fs ~ c => FLT4(fs, c) }
+  private def globalDirective = exact(".GLOBL") ~> rep1sep(symbol, separator) ~ comment ^^ { case ss ~ c =>
+    GLOBL(ss, c)
   }
-  private def identDirective = exact(".IDENT") ~> delimitedString ~ comment ^^ { case s ~ c => IdentDirective(s, c) }
+  private def identDirective = exact(".IDENT") ~> delimitedString ~ comment ^^ { case s ~ c => IDENT(s, c) }
   private def ifDirectiveBlank =
     ("B" | "NB") ~
       (separator ~> macroArgument)
-      ~ comment ^^ { case cond ~ m ~ c => IfDirectiveBlank(cond, m, c) }
+      ~ comment ^^ { case cond ~ m ~ c => IFBlank(cond, m, c) }
   private def ifDirectiveCompare =
     ("EQ" | "NE" | "LT" | "LE" | "GE" | "GT") ~
       (separator ~> expression)
-      ~ comment ^^ { case cond ~ e ~ c => IfDirectiveCompare(cond, e, c) }
+      ~ comment ^^ { case cond ~ e ~ c => IFCompare(cond, e, c) }
   private def ifDirectiveDefined =
     ("DF" | "NDF") ~
       (separator ~> symbol) ~
-      comment ^^ { case cond ~ s ~ c => IfDirectiveDefined(cond, s, c) }
+      comment ^^ { case cond ~ s ~ c => IFDefined(cond, s, c) }
   private def ifDirectiveIdentical =
     ("IDN" | "DIF") ~
       (separator ~> macroArgument) ~
       (separator ~> macroArgument) ~
-      comment ^^ { case cond ~ m1 ~ m2 ~ c => IfDirectiveIdentical(cond, m1, m2, c) }
+      comment ^^ { case cond ~ m1 ~ m2 ~ c => IFIdentical(cond, m1, m2, c) }
   private def ifDirective   = exact(".IF") ~> (ifDirectiveBlank | ifDirectiveCompare | ifDirectiveDefined | ifDirectiveIdentical)
-  private def iffDirective  = exact(".IFF") ~> comment ^^ { IffDirective.apply }
-  private def iftDirective  = exact(".IFT") ~> comment ^^ { IftDirective.apply }
-  private def iftfDirective = exact(".IFTF") ~> comment ^^ { IftfDirective.apply }
+  private def iffDirective  = exact(".IFF") ~> comment ^^ { IFF.apply }
+  private def iftDirective  = exact(".IFT") ~> comment ^^ { IFT.apply }
+  private def iftfDirective = exact(".IFTF") ~> comment ^^ { IFTF.apply }
   private def iifDirectiveBlank =
     ("B" | "NB") ~
       (separator ~> macroArgument) ~
       (separator ~> instruction) ~
-      comment ^^ { case cond ~ m ~ i ~ c => IifDirectiveBlank(cond, m, i, c) }
+      comment ^^ { case cond ~ m ~ i ~ c => IIFBlank(cond, m, i, c) }
   private def iifDirectiveCompare =
     ("EQ" | "NE" | "LT" | "LE" | "GE" | "GT") ~
       (separator ~> expression) ~
       (separator ~> instruction) ~
-      comment ^^ { case cond ~ e ~ i ~ c => IifDirectiveCompare(cond, e, i, c) }
+      comment ^^ { case cond ~ e ~ i ~ c => IIFCompare(cond, e, i, c) }
   private def iifDirectiveDefined =
     ("DF" | "NDF") ~
       (separator ~> symbol) ~
       (separator ~> instruction) ~
-      comment ^^ { case cond ~ s ~ i ~ c => IifDirectiveDefined(cond, s, i, c) }
+      comment ^^ { case cond ~ s ~ i ~ c => IIFDefined(cond, s, i, c) }
   private def iifDirectiveIdentical =
     ("IDN" | "DIF") ~
       (separator ~> macroArgument) ~
       (separator ~> macroArgument) ~
       (separator ~> instruction)
-      ~ comment ^^ { case cond ~ m1 ~ m2 ~ i ~ c => IifDirectiveIdentical(cond, m1, m2, i, c) }
+      ~ comment ^^ { case cond ~ m1 ~ m2 ~ i ~ c => IIFIdentical(cond, m1, m2, i, c) }
   private def iifDirective =
     exact(".IIF") ~> (iifDirectiveBlank | iifDirectiveCompare | iifDirectiveDefined | iifDirectiveIdentical)
-  private def includeDirective = exact(".INCLUDE") ~> delimitedString ~ comment ^^ { case s ~ c => IncludeDirective(s, c) }
-  private def libraryDirective = exact(".LIBRARY") ~> delimitedString ~ comment ^^ { case s ~ c => LibraryDirective(s, c) }
-  private def limitDirective   = exact(".LIMIT") ~> comment ^^ { LimitDirective.apply }
-  private def listDirective    = exact(".LIST") ~> opt(symbol) ~ comment ^^ { case s ~ c => ListDirective(s, c) }
-  private def nlistDirective   = exact(".NLIST") ~> opt(symbol) ~ comment ^^ { case s ~ c => NListDirective(s, c) }
+  private def includeDirective = exact(".INCLUDE") ~> delimitedString ~ comment ^^ { case s ~ c => INCLUDE(s, c) }
+  private def libraryDirective = exact(".LIBRARY") ~> delimitedString ~ comment ^^ { case s ~ c => LIBRARY(s, c) }
+  private def limitDirective   = exact(".LIMIT") ~> comment ^^ { LIMIT.apply }
+  private def listDirective    = exact(".LIST") ~> opt(symbol) ~ comment ^^ { case s ~ c => LIST(s, c) }
+  private def nlistDirective   = exact(".NLIST") ~> opt(symbol) ~ comment ^^ { case s ~ c => NLIST(s, c) }
   private def noCrossDirective = exact(".NOCROSS") ~> repsep(symbol, separator) ~ comment ^^ { case ss ~ c =>
-    NoCrossDirective(ss, c)
+    NOCROSS(ss, c)
   }
-  private def oddDirective = exact(".ODD") ~> comment ^^ { OddDirective.apply }
+  private def oddDirective = exact(".ODD") ~> comment ^^ { ODD.apply }
   private def packedDirective = exact(".PACKED") ~> digits ~ opt(separator ~> symbol) ~ comment ^^ { case d ~ s ~ c =>
-    PackedDirective(d, s, c)
+    PACKED(d, s, c)
   }
-  private def pageDirective = exact(".PAGE") ~> comment ^^ { PageDirective.apply }
+  private def pageDirective = exact(".PAGE") ~> comment ^^ { PAGE.apply }
   private def psectArg = ("RO" | "RW" | "I" | "D" | "GBL" | "LCL" | "ABS" | "REL" | "CON" | "OVR" | "SAV" | "NOSAV") ^^ { identity }
   private def psectDirective = exact(".PSECT") ~> rad50Symbol ~ (separator ~> rep1sep(psectArg, separator)) ~ comment ^^ {
-    case n ~ pas ~ c => PSectDirective(n, pas, c)
+    case n ~ pas ~ c => PSECT(n, pas, c)
   }
-  private def rad50Directive = exact(".RAD50") ~> delimitedRad50String ~ comment ^^ { case s ~ c => Rad50Directive(s, c) }
+  private def rad50Directive = exact(".RAD50") ~> delimitedRad50String ~ comment ^^ { case s ~ c => RAD50(s, c) }
   private def radixDirective = exact(".RADIX") ~> opt("2" | "8" | "10") ~ comment ^^ { case r ~ c =>
-    RadixDirective(r.getOrElse(""), c)
+    RADIX(r.getOrElse(""), c)
   }
-  private def remDirective     = exact(".REM") ~> anyCharacter ^^ { RemDirective.apply }
-  private def restoreDirective = exact(".RESTORE") ~> comment ^^ { RestoreDirective.apply }
-  private def saveDirective    = exact(".SAVE") ~> comment ^^ { SaveDirective.apply }
-  private def sbttlDirective   = exact(".SBTTL") ~> anyString ^^ { SbttlDirective.apply }
-  private def titleDirective   = exact(".TITLE") ~> anyString ^^ { TitleDirective.apply }
-  private def weakDirective    = exact(".WEAK") ~> rep1sep(symbol, separator) ~ comment ^^ { case ss ~ c => WeakDirective(ss, c) }
+  private def remDirective     = exact(".REM") ~> anyCharacter ^^ { REM.apply }
+  private def restoreDirective = exact(".RESTORE") ~> comment ^^ { RESTORE.apply }
+  private def saveDirective    = exact(".SAVE") ~> comment ^^ { SAVE.apply }
+  private def sbttlDirective   = exact(".SBTTL") ~> anyString ^^ { SBTTL.apply }
+  private def titleDirective   = exact(".TITLE") ~> anyString ^^ { TITLE.apply }
+  private def weakDirective    = exact(".WEAK") ~> rep1sep(symbol, separator) ~ comment ^^ { case ss ~ c => WEAK(ss, c) }
   private def wordDirective = exact(".WORD") ~> rep1sep(expression, separator) ~ comment ^^ { case es ~ c =>
-    WordDirective(es, c)
+    WORD(es, c)
   }
 
   def directive: Parser[Directive] =

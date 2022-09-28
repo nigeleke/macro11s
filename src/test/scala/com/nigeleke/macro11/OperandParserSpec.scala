@@ -2,13 +2,12 @@ package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.parser.*
-import org.scalacheck.*
-import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
+import org.scalatestplus.scalacheck.*
 
-class OperandParserSpec extends AnyWordSpec with Matchers:
+class OperandParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with Matchers:
 
   object ParserUnderTest extends OperandParser
   import ParserUnderTest.*
@@ -23,106 +22,130 @@ class OperandParserSpec extends AnyWordSpec with Matchers:
         case Failure(message, _) => fail(message)
         case Error(error, _)     => fail(error)
 
-    "parse addressingMode operands" when {
+    def parseAndCheckAddressingModeResult(am: String, expectedMode: AddressingMode) =
+      parseAndCheckResult(ParserUnderTest.addressingModeOperand, am, Operand.AddressingModeOperand(expectedMode))
+
+    "parse addressingMode operandRoles" when {
 
       "register operand - r" in {
         forAll(genRegister) { r =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, r, Operand.RegisterMode(r))
+          val expectedMode = AddressingMode.Register(RegisterExpression(RegisterTerm(r)))
+          parseAndCheckAddressingModeResult(r, expectedMode)
         }
       }
 
       "register deferred operand - @r" in {
         forAll(genRegister) { r =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"@$r", Operand.RegisterDeferredMode(r))
+          val expectedMode = AddressingMode.RegisterDeferred(RegisterExpression(RegisterTerm(r)))
+          parseAndCheckAddressingModeResult(s"@$r", expectedMode)
         }
       }
 
       "register deferred operand - (r)" in {
         forAll(genRegister) { r =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"($r)", Operand.RegisterDeferredMode(r))
+          val expectedMode = AddressingMode.RegisterDeferred(RegisterExpression(RegisterTerm(r)))
+          parseAndCheckAddressingModeResult(s"($r)", expectedMode)
         }
       }
 
       "auto increment operand - (r)+" in {
         forAll(genRegister) { r =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"($r)+", Operand.AutoIncrementMode(r))
+          val expectedMode = AddressingMode.AutoIncrement(RegisterExpression(RegisterTerm(r)))
+          parseAndCheckAddressingModeResult(s"($r)+", expectedMode)
         }
       }
 
       "auto increment deferred operand - @(r)+" in {
         forAll(genRegister) { r =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"@($r)+", Operand.AutoIncrementDeferredMode(r))
+          val expectedMode = AddressingMode.AutoIncrementDeferred(RegisterExpression(RegisterTerm(r)))
+          parseAndCheckAddressingModeResult(s"@($r)+", expectedMode)
         }
       }
 
       "auto decrement operand - -(r)" in {
         forAll(genRegister) { r =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"-($r)", Operand.AutoDecrementMode(r))
+          val expectedMode = AddressingMode.AutoDecrement(RegisterExpression(RegisterTerm(r)))
+          parseAndCheckAddressingModeResult(s"-($r)", expectedMode)
         }
       }
 
       "auto decrement deferred operand - @-(r)" in {
         forAll(genRegister) { r =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"@-($r)", Operand.AutoDecrementDeferredMode(r))
+          val expectedMode = AddressingMode.AutoDecrementDeferred(RegisterExpression(RegisterTerm(r)))
+          parseAndCheckAddressingModeResult(s"@-($r)", expectedMode)
         }
       }
 
       "index operand - symbol(r)" in {
         forAll(genSymbol, genRegister) { (s, r) =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"$s($r)", Operand.IndexMode(s, r))
+          val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, s).get
+          val expectedRegister   = ParserUnderTest.parse(ParserUnderTest.registerExpression, r).get
+          val expectedMode       = AddressingMode.Index(expectedExpression, expectedRegister)
+          parseAndCheckAddressingModeResult(s"$s($r)", expectedMode)
         }
       }
 
       "index deferred operand - @symbol(r)" in {
         forAll(genSymbol, genRegister) { (s, r) =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"@$s($r)", Operand.IndexDeferredMode(s, r))
+          val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, s).get
+          val expectedRegister   = ParserUnderTest.parse(ParserUnderTest.registerExpression, r).get
+          val expectedMode       = AddressingMode.IndexDeferred(expectedExpression, expectedRegister)
+          parseAndCheckAddressingModeResult(s"@$s($r)", expectedMode)
         }
       }
 
       "immediate operand - #expression" in {
         forAll(genSymbol) { s =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"#$s", Operand.ImmediateMode(s))
+          val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, s).get
+          val expectedMode       = AddressingMode.Immediate(expectedExpression)
+          parseAndCheckAddressingModeResult(s"#$s", expectedMode)
         }
       }
 
       "absolute operand - @#expression" in {
         forAll(genSymbol) { s =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"@#$s", Operand.AbsoluteMode(s))
+          val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, s).get
+          val expectedMode       = AddressingMode.Absolute(expectedExpression)
+          parseAndCheckAddressingModeResult(s"@#$s", expectedMode)
         }
       }
 
       "relative operand - expression" in {
         forAll(genSymbol) { s =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s, Operand.RelativeMode(s))
+          val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, s).get
+          val expectedMode       = AddressingMode.Relative(expectedExpression)
+          parseAndCheckAddressingModeResult(s, expectedMode)
         }
       }
 
       "relative deferred operand - @expression" in {
         forAll(genSymbol) { s =>
-          parseAndCheckResult(ParserUnderTest.addressingModeOperand, s"@$s", Operand.RelativeDeferredMode(s))
+          val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, s).get
+          val expectedMode       = AddressingMode.RelativeDeferred(expectedExpression)
+          parseAndCheckAddressingModeResult(s"@$s", expectedMode)
         }
       }
     }
 
-    "parse addressOffset operands" in {
+    "parse addressOffset operandRoles" in {
       forAll(genAddressOffsetOperand) { a =>
         parseAndCheckResult(ParserUnderTest.addressOffsetOperand, a, Operand.AddressOffsetOperand(a))
       }
     }
 
-    "parse register operands" in {
+    "parse register operandRoles" in {
       forAll(genRegister) { r =>
         parseAndCheckResult(ParserUnderTest.registerOperand, r, Operand.RegisterOperand(r))
       }
     }
 
-    "parse parameterCount operands" in {
+    "parse parameterCount operandRoles" in {
       forAll(genSymbol) { s =>
         parseAndCheckResult(ParserUnderTest.parameterCountOperand, s, Operand.ParameterCountOperand(s))
       }
     }
 
-    "parse trapParameter operands" in {
+    "parse trapParameter operandRoles" in {
       forAll(genSymbol) { s =>
         parseAndCheckResult(ParserUnderTest.trapParameterOperand, s, Operand.TrapParameterOperand(s))
       }

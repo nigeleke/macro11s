@@ -2,13 +2,12 @@ package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.parser.*
-import org.scalacheck.*
-import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
+import org.scalatestplus.scalacheck.*
 
-class Macro11ParserSpec extends AnyWordSpec with Matchers:
+class Macro11ParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with Matchers:
 
   object ParserUnderTest extends Macro11Parser with UtilityParser
   import ParserUnderTest.*

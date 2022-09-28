@@ -14,14 +14,12 @@ object Generators:
       comment <- Gen.oneOf("", s"; $text")
     yield comment
 
-  val genSeparator: Gen[String] = Gen.oneOf(" ", "\t", ",")
-
   val genSymbol: Gen[String] =
     val symbolCharacters = Gen.oneOf(('A' to 'Z') ++ ('a' to 'z') ++ ('0' to '9') ++ Seq('$', '.'))
     for symbol <- Gen.nonEmptyListOf(symbolCharacters).suchThat(s => !('0' to '9').contains(s.head))
     yield s"${symbol.mkString}"
   val genSymbolOption: Gen[Option[String]] = Gen.option(genSymbol)
-  val genSymbolsList: Gen[List[String]] = Gen.nonEmptyListOf(genSymbol)
+  val genSymbolsList: Gen[List[String]]    = Gen.nonEmptyListOf(genSymbol)
 
   def genStringWithout(c: Char): Gen[String] = Gen.asciiPrintableStr.retryUntil(s => !s.contains(c))
 
@@ -29,10 +27,10 @@ object Generators:
   val genRegister: Gen[String] = Gen.oneOf((0 to 7).map(r => s"%$r") ++ (0 to 5).map(r => s"R$r") ++ Seq("SP", "PC"))
 
   val genBinaryOperator: Gen[String] = Gen.oneOf("+", "-", "*", "/")
-  val genUnaryOperator: Gen[String] = Gen.oneOf("+", "-")
+  val genUnaryOperator: Gen[String]  = Gen.oneOf("+", "-")
 
   val genNumericTerm: Gen[String] = Gen.numStr
-  val genSymbolTerm: Gen[String] = Gen.oneOf(genSymbol, Gen.const("."))
+  val genSymbolTerm: Gen[String]  = Gen.oneOf(genSymbol, Gen.const("."))
   val genSingleQuoteTerm: Gen[String] =
     for char <- Gen.asciiPrintableChar.suchThat(_ != ' ')
     yield s"'$char"
@@ -56,7 +54,7 @@ object Generators:
       rhs      <- genTerm
     yield s"$lhs$operator$rhs"
   val genSimpleExpression: Gen[String] = genTerm
-  val genExpression: Gen[String] = Gen.oneOf(genBinaryOperatorExpression, genSimpleExpression).suchThat(_.nonEmpty)
+  val genExpression: Gen[String]       = Gen.oneOf(genBinaryOperatorExpression, genSimpleExpression).suchThat(_.nonEmpty)
   val genExpressionTerm: Gen[String] =
     for
       lt         <- Gen.const('<')
@@ -64,10 +62,10 @@ object Generators:
       expression <- genExpression
     yield s"$lt$expression$gt"
   val genExpressionOption: Gen[Option[String]] = Gen.option(genExpression)
-  val genExpressionList: Gen[List[String]] = Gen.nonEmptyListOf(genExpression)
+  val genExpressionList: Gen[List[String]]     = Gen.nonEmptyListOf(genExpression)
 
   val genNumericExpression: Gen[String] = genSymbol
-  val genMacroArgument: Gen[String] = genExpressionTerm
+  val genMacroArgument: Gen[String]     = genExpressionTerm
 
 
   // format: off
@@ -87,27 +85,28 @@ object Generators:
   private val mnemonics = Instruction.Mnemonic.values.toSeq
 
   extension (m: Instruction.Mnemonic)
-    def noOperands                    = m.fits()
-    def destinationOperands           = m.fits(OperandRole.Destination)
-    def sourceDestinationOperands     = m.fits(OperandRole.Source, OperandRole.Destination)
-    def addressOffsetOperands         = m.fits(OperandRole.AddressOffsetSigned)
-    def registerAddressOffsetOperands = m.fits(OperandRole.Register, OperandRole.AddressOffsetUnsigned)
-    def registerDestinationOperands   = m.fits(OperandRole.Register, OperandRole.Destination)
-    def parameterCountOperands        = m.fits(OperandRole.ParameterCount)
-    def trapOperands                  = m.fits(OperandRole.Trap)
-    def registerSourceOperands        = m.fits(OperandRole.Register, OperandRole.Source)
-    def registerOperands              = m.fits(OperandRole.Register)
+    def noOperands                    = m.requiring()
+    def destinationOperands           = m.requiring(OperandRole.Destination)
+    def sourceDestinationOperands     = m.requiring(OperandRole.Source, OperandRole.Destination)
+    def addressOffsetOperands         = m.requiring(OperandRole.AddressOffsetSigned)
+    def registerAddressOffsetOperands = m.requiring(OperandRole.Register, OperandRole.AddressOffsetUnsigned)
+    def registerDestinationOperands   = m.requiring(OperandRole.Register, OperandRole.Destination)
+    def parameterCountOperands        = m.requiring(OperandRole.ParameterCount)
+    def trapOperands                  = m.requiring(OperandRole.Trap)
+    def registerSourceOperands        = m.requiring(OperandRole.Register, OperandRole.Source)
+    def registerOperands              = m.requiring(OperandRole.Register)
 
-  val genNoOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(noOperands).map(_.toString))
-  val genDestinationOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(destinationOperands).map(_.toString))
+  val genNoOperandMnemonic: Gen[String]                = Gen.oneOf(mnemonics.filter(noOperands).map(_.toString))
+  val genDestinationOperandMnemonic: Gen[String]       = Gen.oneOf(mnemonics.filter(destinationOperands).map(_.toString))
   val genSourceDestinationOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(sourceDestinationOperands).map(_.toString))
-  val genAddressOffsetOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(addressOffsetOperands).map(_.toString))
-  val genRegisterAddressOffsetOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(registerAddressOffsetOperands).map(_.toString))
+  val genAddressOffsetOperandMnemonic: Gen[String]     = Gen.oneOf(mnemonics.filter(addressOffsetOperands).map(_.toString))
+  val genRegisterAddressOffsetOperandMnemonic: Gen[String] =
+    Gen.oneOf(mnemonics.filter(registerAddressOffsetOperands).map(_.toString))
   val genRegisterDestinationOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(registerDestinationOperands).map(_.toString))
-  val genParameterCountOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(parameterCountOperands).map(_.toString))
-  val genTrapOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(trapOperands).map(_.toString))
-  val genRegisterSourceOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(registerSourceOperands).map(_.toString))
-  val genRegisterOperandMnemonic: Gen[String] = Gen.oneOf(mnemonics.filter(registerOperands).map(_.toString))
+  val genParameterCountOperandMnemonic: Gen[String]      = Gen.oneOf(mnemonics.filter(parameterCountOperands).map(_.toString))
+  val genTrapOperandMnemonic: Gen[String]                = Gen.oneOf(mnemonics.filter(trapOperands).map(_.toString))
+  val genRegisterSourceOperandMnemonic: Gen[String]      = Gen.oneOf(mnemonics.filter(registerSourceOperands).map(_.toString))
+  val genRegisterOperandMnemonic: Gen[String]            = Gen.oneOf(mnemonics.filter(registerOperands).map(_.toString))
 
   // Statements...
   val genInstruction: Gen[String] =
@@ -127,9 +126,10 @@ object Generators:
     yield s
 
   val genDsablEnablArgument: Gen[String] =
-    Gen.oneOf("ABS", "AMA", "CDR", "CRF", "FPT", "LC", "LCM", "LSB", "MCL", "PNC", "REG", "GBL")
+    val validArgs = List("ABS", "AMA", "CDR", "CRF", "FPT", "LC", "LCM", "LSB", "MCL", "PNC", "REG", "GBL")
+    Gen.oneOf(validArgs)
 
-  val genFloat: Gen[String] = Gen.double.map(BigDecimal(_).toString)
+  val genFloat: Gen[String]           = Gen.double.map(BigDecimal(_).toString)
   val genFloatList: Gen[List[String]] = Gen.nonEmptyListOf(genFloat)
 
   val genPSectArguments: Gen[List[String]] =

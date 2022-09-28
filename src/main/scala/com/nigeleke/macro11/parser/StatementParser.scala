@@ -6,9 +6,9 @@ import scala.util.parsing.combinator.*
 
 trait StatementParser extends InstructionParser with UtilityParser with RegexParsers:
 
-  private def globalLabel: Parser[GlobalLabel] = (symbol <~ "::") ^^ { GlobalLabel.apply }
-  private def localLabel: Parser[LocalLabel]   = (symbol <~ ":") ^^ { LocalLabel.apply }
-  private def label: Parser[Label]             = globalLabel ||| localLabel
+  private def globalLabel: Parser[Label] = (symbol <~ "::") ^^ { s => Label(s, true) }
+  private def localLabel: Parser[Label]  = (symbol <~ ":") ^^ { s => Label(s, false) }
+  private def label: Parser[Label]       = globalLabel ||| localLabel
 
   private def labels: Parser[List[Label]] = rep(label)
 

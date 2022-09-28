@@ -1,10 +1,12 @@
 val scala3Version = "3.2.0"
 
-Compile / doc / scalacOptions := Seq("-groups")
+Compile / compile / wartremoverErrors ++= Warts.allBut(Wart.Equals, Wart.SizeIs)
+Compile / doc / scalacOptions ++= Seq("-groups")
+Test / test / parallelExecution := false
 
 val scalaParserCombinatorVersion = "2.1.1"
 val scalaTestVersion             = "3.2.13"
-val scalaCheckVersion            = "1.17.0"
+val scalaTestPlusVersion         = "3.2.13.0"
 
 lazy val root = project
   .in(file("."))
@@ -15,7 +17,7 @@ lazy val root = project
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorVersion,
       "org.scalactic"          %% "scalactic"                % scalaTestVersion,
-      "org.scalatest"          %% "scalatest"                % scalaTestVersion  % "test",
-      "org.scalacheck"         %% "scalacheck"               % scalaCheckVersion % "test"
+      "org.scalatest"          %% "scalatest"                % scalaTestVersion     % "test",
+      "org.scalatestplus"      %% "scalacheck-1-16"          % scalaTestPlusVersion % "test"
     )
   )

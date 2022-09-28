@@ -4,13 +4,12 @@ import com.nigeleke.macro11.ast.*
 import com.nigeleke.macro11.ast.Instruction.Mnemonic
 import com.nigeleke.macro11.ast.Instruction.OperandRole
 import com.nigeleke.macro11.parser.*
-import org.scalacheck.*
-import org.scalacheck.Prop.*
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
+import org.scalatestplus.scalacheck.*
 
-class InstructionParserSpec extends AnyWordSpec with Matchers:
+class InstructionParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with Matchers:
 
   object ParserUnderTest extends InstructionParser
   import ParserUnderTest.*
@@ -33,7 +32,7 @@ class InstructionParserSpec extends AnyWordSpec with Matchers:
 
     "parse instructions" when {
 
-      "there are no operands" in {
+      "there are no operandRoles" in {
         forAll(genNoOperandMnemonic) { i => parseAndCheckResult(i, i, Seq.empty) }
       }
 
@@ -44,7 +43,7 @@ class InstructionParserSpec extends AnyWordSpec with Matchers:
         }
       }
 
-      "there are source and destination addressing operandParser operands" in {
+      "there are source and destination addressing operandParser operandRoles" in {
         forAll(genSourceDestinationOperandMnemonic, genAddressingModeOperand, genAddressingModeOperand) { (i, sss, ddd) =>
           val expectedSss = parseOperand(ParserUnderTest.addressingModeOperand, sss)
           val expectedDdd = parseOperand(ParserUnderTest.addressingModeOperand, ddd)
@@ -59,7 +58,7 @@ class InstructionParserSpec extends AnyWordSpec with Matchers:
         }
       }
 
-      "there are register and address offset operands" in {
+      "there are register and address offset operandRoles" in {
         forAll(genRegisterAddressOffsetOperandMnemonic, genRegister, genAddressOffsetOperand) { (i, r, a) =>
           val expectedR = parseOperand(ParserUnderTest.registerOperand, r)
           val expectedA = parseOperand(ParserUnderTest.addressOffsetOperand, a)
@@ -67,7 +66,7 @@ class InstructionParserSpec extends AnyWordSpec with Matchers:
         }
       }
 
-      "there are register and destination addressing mode operands" in {
+      "there are register and destination addressing mode operandRoles" in {
         forAll(genRegisterDestinationOperandMnemonic, genRegister, genAddressingModeOperand) { (i, r, ddd) =>
           val expectedR   = parseOperand(ParserUnderTest.registerOperand, r)
           val expectedDdd = parseOperand(ParserUnderTest.addressingModeOperand, ddd)
@@ -89,7 +88,7 @@ class InstructionParserSpec extends AnyWordSpec with Matchers:
         }
       }
 
-      "there are register and source addressing mode operands" in {
+      "there are register and source addressing mode operandRoles" in {
         forAll(genRegisterSourceOperandMnemonic, genRegister, genAddressingModeOperand) { (i, r, sss) =>
           val expectedR   = parseOperand(ParserUnderTest.registerOperand, r)
           val expectedSss = parseOperand(ParserUnderTest.addressingModeOperand, sss)
@@ -109,16 +108,19 @@ class InstructionParserSpec extends AnyWordSpec with Matchers:
 
     "manage instruction token separators" when {
 
+      val deferredR0 = Operand.AddressingModeOperand(AddressingMode.RegisterDeferred(RegisterExpression(RegisterTerm("R0"))))
+      val r1         = Operand.AddressingModeOperand(AddressingMode.Register(RegisterExpression(RegisterTerm("R1"))))
+
       "space" in {
-        parseAndCheckResult("MOV @R0, R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+        parseAndCheckResult("MOV @R0, R1", "MOV", List(deferredR0, r1))
       }
 
       "tab" in {
-        parseAndCheckResult("MOV\t@R0,\tR1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+        parseAndCheckResult("MOV\t@R0,\tR1", "MOV", List(deferredR0, r1))
       }
 
       "implied" in {
-        parseAndCheckResult("MOV@R0,R1", "MOV", List(Operand.RegisterDeferredMode("R0"), Operand.RegisterMode("R1")))
+        parseAndCheckResult("MOV@R0,R1", "MOV", List(deferredR0, r1))
       }
 
     }

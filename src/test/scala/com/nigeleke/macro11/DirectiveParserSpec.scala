@@ -1,14 +1,15 @@
 package com.nigeleke.macro11
 
 import com.nigeleke.macro11.ast.*
+import com.nigeleke.macro11.ast.directives.*
 import com.nigeleke.macro11.parser.*
-import org.scalacheck.*
-import org.scalacheck.Prop.*
+import org.scalacheck.Gen
 import org.scalatest.*
 import org.scalatest.matchers.should.*
 import org.scalatest.wordspec.*
+import org.scalatestplus.scalacheck.*
 
-class DirectiveParserSpec extends AnyWordSpec with Matchers:
+class DirectiveParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with Matchers:
 
   object ParserUnderTest extends DirectiveParser with InstructionParser with UtilityParser
   import ParserUnderTest.*
@@ -39,41 +40,41 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
     def testFloatingPointStorageDirective(
         directive: String,
         expectedDirective: (List[BigDecimal], Comment) => Directive
-    ) = testSingleListDirective(directive, genFloatList, BigDecimal(_), expectedDirective)
+    ): Unit = testListParameterDirective(directive, genFloatList, BigDecimal(_), expectedDirective)
 
-    def testSingleExpressionDirective[T](
+    def testParameterDirective[T](
         directive: String,
-        genExpression: Gen[String],
+        genParameter: Gen[String],
         toT: String => T,
         expectedDirective: (T, Comment) => Directive
-    ) =
-      forAll(genExpression, genComment) { (s, comment) =>
-        parseAndCheckResult(s"$directive $s$comment", expectedDirective(toT(s), Comment(comment)))
+    ): Unit =
+      forAll(genParameter, genComment) { (parameter, comment) =>
+        parseAndCheckResult(s"$directive $parameter$comment", expectedDirective(toT(parameter), Comment(comment)))
       }
 
-    def testSingleOptionalExpressionDirective[T](
+    def testOptionalParameterDirective[T](
         directive: String,
-        genMaybeExpression: Gen[Option[T]],
+        genMaybeParameter: Gen[Option[T]],
         expectedDirective: (Option[T], Comment) => Directive
-    ) =
-      forAll(genMaybeExpression, genComment) { (maybeS, comment) =>
-        val s = maybeS.getOrElse("")
-        parseAndCheckResult(s"$directive $s$comment", expectedDirective(maybeS, Comment(comment)))
+    ): Unit =
+      forAll(genMaybeParameter, genComment) { (maybeParameter, comment) =>
+        val parameter = maybeParameter.getOrElse("")
+        parseAndCheckResult(s"$directive $parameter$comment", expectedDirective(maybeParameter, Comment(comment)))
       }
 
-    def testSingleListDirective[T](
+    def testListParameterDirective[T](
         directive: String,
-        genItems: Gen[List[String]],
+        genParameters: Gen[List[String]],
         toT: String => T,
         expectedDirective: (List[T], Comment) => Directive
-    ) =
-      forAll(genItems, genComment) { (items, comment) =>
-        val itemsAsString = items.mkString(", ")
-        val expectedItems = items.map(toT)
-        parseAndCheckResult(s"$directive $itemsAsString$comment", expectedDirective(expectedItems, Comment(comment)))
+    ): Unit =
+      forAll(genParameters, genComment) { (parameters, comment) =>
+        val parametersAsString = parameters.mkString(", ")
+        val expectedParameters = parameters.map(toT)
+        parseAndCheckResult(s"$directive $parametersAsString$comment", expectedDirective(expectedParameters, Comment(comment)))
       }
 
-    def testNoParametersDirective(directive: String, expectedDirective: Comment => Directive) =
+    def testNoParametersDirective(directive: String, expectedDirective: Comment => Directive): Unit =
       forAll(genComment) { comment =>
         parseAndCheckResult(s"$directive$comment", expectedDirective(Comment(comment)))
       }
@@ -82,72 +83,72 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
     val stringToEnablDsablArgument: String => EnablDsablArgument = EnablDsablArgument.valueOf
 
     "parse .ASCII directive" when {
-      testDelimitedStringDirective(".ASCII", genSimpleDelimitedString, (s, c) => AsciiDirective(DelimitedString(s), c))
+      testDelimitedStringDirective(".ASCII", genSimpleDelimitedString, (s, c) => ASCII(DelimitedString.from(s), c))
     }
 
     "parse .ASCIZ directive" when {
-      testDelimitedStringDirective(".ASCIZ", genSimpleDelimitedString, (s, c) => AscizDirective(DelimitedString(s), c))
+      testDelimitedStringDirective(".ASCIZ", genSimpleDelimitedString, (s, c) => ASCIZ(DelimitedString.from(s), c))
     }
 
     "parse .ASECT directive" in {
-      testNoParametersDirective(".ASECT", ASectDirective.apply)
+      testNoParametersDirective(".ASECT", ASECT.apply)
     }
 
     "parse .BLKB directive" in {
-      testSingleExpressionDirective(".BLKB", genExpression, stringToExpression, BlkbDirective.apply)
+      testParameterDirective(".BLKB", genExpression, stringToExpression, BLKB.apply)
     }
 
     "parse .BLKW directive" in {
-      testSingleExpressionDirective(".BLKW", genExpression, stringToExpression, BlkwDirective.apply)
+      testParameterDirective(".BLKW", genExpression, stringToExpression, BLKW.apply)
     }
 
     "parse .BYTE directive" in {
-      testSingleListDirective(".BYTE", genExpressionList, stringToExpression, ByteDirective.apply)
+      testListParameterDirective(".BYTE", genExpressionList, stringToExpression, BYTE.apply)
     }
 
     "parse .CROSS directive" in {
-      testSingleListDirective(".CROSS", genSymbolsList, identity, CrossDirective.apply)
+      testListParameterDirective(".CROSS", genSymbolsList, identity, CROSS.apply)
     }
 
     "parse .CSECT directive" in {
-      testSingleExpressionDirective(".CSECT", genRad50Symbol, identity, CSectDirective.apply)
+      testParameterDirective(".CSECT", genRad50Symbol, identity, CSECT.apply)
     }
 
     "parse .DSABL directive" in {
-      testSingleExpressionDirective(".DSABL", genDsablEnablArgument, stringToEnablDsablArgument, DsablDirective.apply)
+      testParameterDirective(".DSABL", genDsablEnablArgument, stringToEnablDsablArgument, DSABL.apply)
     }
 
     "parse .ENABL directive" in {
-      testSingleExpressionDirective(".ENABL", genDsablEnablArgument, stringToEnablDsablArgument, EnablDirective.apply)
+      testParameterDirective(".ENABL", genDsablEnablArgument, stringToEnablDsablArgument, ENABL.apply)
     }
 
     "parse .END directive" in {
       val stringToExpression: String => Expression = ParserUnderTest.parse(ParserUnderTest.expression, _).get
-      testSingleOptionalExpressionDirective(".END", genExpressionOption, (s, c) => EndDirective(s.map(stringToExpression), c))
+      testOptionalParameterDirective(".END", genExpressionOption, (s, c) => END(s.map(stringToExpression), c))
     }
 
     "parse .ENDC directive" in {
-      testNoParametersDirective(".ENDC", EndcDirective.apply)
+      testNoParametersDirective(".ENDC", ENDC.apply)
     }
 
     "parse .EVEN directive" in {
-      testNoParametersDirective(".EVEN", EvenDirective.apply)
+      testNoParametersDirective(".EVEN", EVEN.apply)
     }
 
     "parse .FLT2 directive" in {
-      testFloatingPointStorageDirective(".FLT2", Flt2Directive.apply)
+      testFloatingPointStorageDirective(".FLT2", FLT2.apply)
     }
 
     "parse .FLT4 directive" in {
-      testFloatingPointStorageDirective(".FLT4", Flt4Directive.apply)
+      testFloatingPointStorageDirective(".FLT4", FLT4.apply)
     }
 
     "parse .GLOBL directive" in {
-      testSingleListDirective(".GLOBAL", genSymbolsList, identity, GlobalDirective.apply)
+      testListParameterDirective(".GLOBL", genSymbolsList, identity, GLOBL.apply)
     }
 
     "parse .IDENT directive" when {
-      testDelimitedStringDirective(".IDENT", genRad50DelimitedString, (s, c) => IdentDirective(DelimitedString(s), c))
+      testDelimitedStringDirective(".IDENT", genRad50DelimitedString, (s, c) => IDENT(DelimitedString.from(s), c))
     }
 
     "parse .IF directive" when {
@@ -155,7 +156,7 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
         val genCondition = Gen.oneOf("B", "NB")
         forAll(genCondition, genMacroArgument, genComment) { (cond, ma, comment) =>
           val expectedArgument  = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma).get
-          val expectedDirective = IfDirectiveBlank(cond, expectedArgument, Comment(comment))
+          val expectedDirective = IFBlank(cond, expectedArgument, Comment(comment))
           parseAndCheckResult(s".IF $cond, $ma $comment", expectedDirective)
         }
       }
@@ -164,7 +165,7 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
         val genCondition = Gen.oneOf("EQ", "NE", "LT", "LE", "GE", "GT")
         forAll(genCondition, genExpression, genComment) { (cond, e, comment) =>
           val expectedExpression = ParserUnderTest.parse(ParserUnderTest.expression, e).get
-          val expectedDirective  = IfDirectiveCompare(cond, expectedExpression, Comment(comment))
+          val expectedDirective  = IFCompare(cond, expectedExpression, Comment(comment))
           parseAndCheckResult(s".IF $cond, $e $comment", expectedDirective)
         }
       }
@@ -173,7 +174,7 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
       "condition is oneOf DF NDF" in {
         val genCondition = Gen.oneOf("DF", "NDF")
         forAll(genCondition, genSymbol, genComment) { (cond, s, comment) =>
-          val expectedDirective = IfDirectiveDefined(cond, s, Comment(comment))
+          val expectedDirective = IFDefined(cond, s, Comment(comment))
           parseAndCheckResult(s".IF $cond, $s $comment", expectedDirective)
         }
       }
@@ -183,22 +184,22 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
         forAll(genCondition, genMacroArgument, genMacroArgument, genComment) { (cond, ma1, ma2, comment) =>
           val expectedArgument1 = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma1).get
           val expectedArgument2 = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma2).get
-          val expectedDirective = IfDirectiveIdentical(cond, expectedArgument1, expectedArgument2, Comment(comment))
+          val expectedDirective = IFIdentical(cond, expectedArgument1, expectedArgument2, Comment(comment))
           parseAndCheckResult(s".IF $cond, $ma1, $ma2 $comment", expectedDirective)
         }
       }
     }
 
     "parse .IFF directive" in {
-      testNoParametersDirective(".IFF", IffDirective.apply)
+      testNoParametersDirective(".IFF", IFF.apply)
     }
 
     "parse .IFT directive" in {
-      testNoParametersDirective(".IFT", IftDirective.apply)
+      testNoParametersDirective(".IFT", IFT.apply)
     }
 
     "parse .IFTF directive" in {
-      testNoParametersDirective(".IFTF", IftfDirective.apply)
+      testNoParametersDirective(".IFTF", IFTF.apply)
     }
 
     "parse .IIF directive" when {
@@ -208,7 +209,7 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
         forAll(genCondition, genMacroArgument, genInstruction, genComment) { (cond, ma, i, comment) =>
           val expectedArgument    = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma).get
           val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
-          val expectedDirective   = IifDirectiveBlank(cond, expectedArgument, expectedInstruction, Comment(comment))
+          val expectedDirective   = IIFBlank(cond, expectedArgument, expectedInstruction, Comment(comment))
           parseAndCheckResult(s".IIF $cond, $ma, $i $comment", expectedDirective)
         }
       }
@@ -218,7 +219,7 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
         forAll(genCondition, genExpression, genInstruction, genComment) { (cond, e, i, comment) =>
           val expectedExpression  = ParserUnderTest.parse(ParserUnderTest.expression, e).get
           val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
-          val expectedDirective   = IifDirectiveCompare(cond, expectedExpression, expectedInstruction, Comment(comment))
+          val expectedDirective   = IIFCompare(cond, expectedExpression, expectedInstruction, Comment(comment))
           parseAndCheckResult(s".IIF $cond, $e, $i $comment", expectedDirective)
         }
       }
@@ -228,7 +229,7 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
         val genCondition = Gen.oneOf("DF", "NDF")
         forAll(genCondition, genSymbol, genInstruction, genComment) { (cond, s, i, comment) =>
           val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
-          val expectedDirective   = IifDirectiveDefined(cond, s, expectedInstruction, Comment(comment))
+          val expectedDirective   = IIFDefined(cond, s, expectedInstruction, Comment(comment))
           parseAndCheckResult(s".IIF $cond, $s, $i $comment", expectedDirective)
         }
       }
@@ -240,105 +241,105 @@ class DirectiveParserSpec extends AnyWordSpec with Matchers:
           val expectedArgument2   = ParserUnderTest.parse(ParserUnderTest.macroArgument, ma2).get
           val expectedInstruction = ParserUnderTest.parse(ParserUnderTest.instruction, i).get
           val expectedDirective =
-            IifDirectiveIdentical(cond, expectedArgument1, expectedArgument2, expectedInstruction, Comment(comment))
+            IIFIdentical(cond, expectedArgument1, expectedArgument2, expectedInstruction, Comment(comment))
           parseAndCheckResult(s".IIF $cond, $ma1, $ma2, $i $comment", expectedDirective)
         }
       }
     }
 
     "parse .INCLUDE directive" when {
-      testDelimitedStringDirective(".LIBRARY", genSimpleDelimitedString, (s, c) => LibraryDirective(DelimitedString(s), c))
+      testDelimitedStringDirective(".LIBRARY", genSimpleDelimitedString, (s, c) => LIBRARY(DelimitedString.from(s), c))
     }
 
     "parse .LIBRARY directive" when {
-      testDelimitedStringDirective(".INCLUDE", genSimpleDelimitedString, (s, c) => IncludeDirective(DelimitedString(s), c))
+      testDelimitedStringDirective(".INCLUDE", genSimpleDelimitedString, (s, c) => INCLUDE(DelimitedString.from(s), c))
     }
 
     "parse .LIMIT directive" in {
-      testNoParametersDirective(".LIMIT", LimitDirective.apply)
+      testNoParametersDirective(".LIMIT", LIMIT.apply)
     }
 
     "parse .LIST directive" in {
-      testSingleOptionalExpressionDirective(".LIST", genSymbolOption, ListDirective.apply)
+      testOptionalParameterDirective(".LIST", genSymbolOption, LIST.apply)
     }
 
     "parse .MACRO directive" when {}
 
     "parse .NLIST directive" in {
-      testSingleOptionalExpressionDirective(".NLIST", genSymbolOption, NListDirective.apply)
+      testOptionalParameterDirective(".NLIST", genSymbolOption, NLIST.apply)
     }
 
     "parse .NOCROSS directive" in {
-      testSingleListDirective(".NOCROSS", genSymbolsList, identity, NoCrossDirective.apply)
+      testListParameterDirective(".NOCROSS", genSymbolsList, identity, NOCROSS.apply)
     }
 
     "parse .ODD directive" in {
-      testNoParametersDirective(".ODD", OddDirective.apply)
+      testNoParametersDirective(".ODD", ODD.apply)
     }
 
     "parse .PACKED directive" in {
       forAll(genDecimalString, genSymbolOption, genComment) { (d, maybeS, comment) =>
         val s = maybeS.fold("")(s => s", $s")
-        parseAndCheckResult(s".PACKED $d$s$comment", PackedDirective(d, maybeS, Comment(comment)))
+        parseAndCheckResult(s".PACKED $d$s$comment", PACKED(d, maybeS, Comment(comment)))
       }
     }
 
     "parse .PAGE directive" in {
-      testNoParametersDirective(".PAGE", PageDirective.apply)
+      testNoParametersDirective(".PAGE", PAGE.apply)
     }
 
     "parse .PSECT directive" in {
       forAll(genRad50Symbol, genPSectArguments, genComment) { (rs, pas, comment) =>
         val pasString = pas.mkString(", ")
-        parseAndCheckResult(s".PSECT $rs, $pasString$comment", PSectDirective(rs, pas, Comment(comment)))
+        parseAndCheckResult(s".PSECT $rs, $pasString$comment", PSECT(rs, pas, Comment(comment)))
       }
     }
 
     "parse .RAD50 directive" when {
-      testDelimitedStringDirective(".RAD50", genRad50DelimitedString, (s, c) => Rad50Directive(DelimitedString(s), c))
+      testDelimitedStringDirective(".RAD50", genRad50DelimitedString, (s, c) => RAD50(DelimitedString.from(s), c))
     }
 
     "parse .RADIX directive" in {
       forAll(genMaybeRadix, genComment) { (maybeR, comment) =>
         val r = maybeR.getOrElse("")
-        parseAndCheckResult(s".RADIX $r$comment", RadixDirective(r, Comment(comment)))
+        parseAndCheckResult(s".RADIX $r$comment", RADIX(r, Comment(comment)))
       }
     }
 
     "parse .REM directive" in {
       forAll(Gen.asciiPrintableChar.suchThat(_ != ' ')) { r =>
-        parseAndCheckResult(s".REM $r", RemDirective(s"$r"))
+        parseAndCheckResult(s".REM $r", REM(s"$r"))
       }
     }
 
     "parse .RESTORE directive" in {
-      testNoParametersDirective(".RESTORE", RestoreDirective.apply)
+      testNoParametersDirective(".RESTORE", RESTORE.apply)
     }
 
     "parse .SAVE directive" in {
-      testNoParametersDirective(".SAVE", SaveDirective.apply)
+      testNoParametersDirective(".SAVE", SAVE.apply)
     }
 
     "parse .SBTTL directive" in {
       forAll(Gen.asciiPrintableStr) { s =>
         val cleanedS = s.trim
-        parseAndCheckResult(s".SBTTL $cleanedS", SbttlDirective(cleanedS))
+        parseAndCheckResult(s".SBTTL $cleanedS", SBTTL(cleanedS))
       }
     }
 
     "parse .TITLE directive" in {
       forAll(Gen.asciiPrintableStr) { s =>
         val cleanedS = s.trim
-        parseAndCheckResult(s".TITLE $cleanedS", TitleDirective(cleanedS))
+        parseAndCheckResult(s".TITLE $cleanedS", TITLE(cleanedS))
       }
     }
 
     "parse .WEAK directive" in {
-      testSingleListDirective(".WEAK", genSymbolsList, identity, WeakDirective.apply)
+      testListParameterDirective(".WEAK", genSymbolsList, identity, WEAK.apply)
     }
 
     "parse .WORD directive" in {
-      testSingleListDirective(".WORD", genExpressionList, stringToExpression, WordDirective.apply)
+      testListParameterDirective(".WORD", genExpressionList, stringToExpression, WORD.apply)
     }
 
   }
