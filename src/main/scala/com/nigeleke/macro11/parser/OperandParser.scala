@@ -6,18 +6,18 @@ import scala.util.parsing.combinator.*
 
 trait OperandParser extends UtilityParser with RegexParsers:
 
-  private def registerMode              = registerExpression ^^ { AddressingMode.Register.apply }
-  private def registerDeferredMode1     = "@" ~> registerExpression ^^ { AddressingMode.RegisterDeferred.apply }
-  private def registerDeferredMode2     = "(" ~> registerExpression <~ ")" ^^ { AddressingMode.RegisterDeferred.apply }
+  private def registerMode              = expression ^^ { AddressingMode.Register.apply }
+  private def registerDeferredMode1     = "@" ~> expression ^^ { AddressingMode.RegisterDeferred.apply }
+  private def registerDeferredMode2     = "(" ~> expression <~ ")" ^^ { AddressingMode.RegisterDeferred.apply }
   private def registerDeferredMode      = registerDeferredMode1 | registerDeferredMode2
-  private def autoIncrementMode         = "(" ~> registerExpression <~ ")+" ^^ { AddressingMode.AutoIncrement.apply }
-  private def autoIncrementDeferredMode = "@(" ~> registerExpression <~ ")+" ^^ { AddressingMode.AutoIncrementDeferred.apply }
-  private def autoDecrementMode         = "-(" ~> registerExpression <~ ")" ^^ { AddressingMode.AutoDecrement.apply }
-  private def autoDecrementDeferredMode = "@-(" ~> registerExpression <~ ")" ^^ { AddressingMode.AutoDecrementDeferred.apply }
-  private def indexMode = expression ~ ("(" ~> registerExpression <~ ")") ^^ { case xe ~ re =>
+  private def autoIncrementMode         = "(" ~> expression <~ ")+" ^^ { AddressingMode.AutoIncrement.apply }
+  private def autoIncrementDeferredMode = "@(" ~> expression <~ ")+" ^^ { AddressingMode.AutoIncrementDeferred.apply }
+  private def autoDecrementMode         = "-(" ~> expression <~ ")" ^^ { AddressingMode.AutoDecrement.apply }
+  private def autoDecrementDeferredMode = "@-(" ~> expression <~ ")" ^^ { AddressingMode.AutoDecrementDeferred.apply }
+  private def indexMode = expression ~ ("(" ~> expression <~ ")") ^^ { case xe ~ re =>
     AddressingMode.Index(xe, re)
   }
-  private def indexDeferredMode = "@" ~> expression ~ ("(" ~> registerExpression <~ ")") ^^ { case xe ~ re =>
+  private def indexDeferredMode = "@" ~> expression ~ ("(" ~> expression <~ ")") ^^ { case xe ~ re =>
     AddressingMode.IndexDeferred(xe, re)
   }
   private def immediateMode        = "#" ~> expression ^^ { AddressingMode.Immediate.apply }
@@ -34,13 +34,13 @@ trait OperandParser extends UtilityParser with RegexParsers:
       relativeMode ||| relativeDeferredMode) ^^ { Operand.AddressingModeOperand.apply }
 
   def addressOffsetOperand: Parser[Operand.AddressOffsetOperand] =
-    symbol ^^ { Operand.AddressOffsetOperand.apply }
+    expression ^^ { Operand.AddressOffsetOperand.apply }
 
   def registerOperand: Parser[Operand.RegisterOperand] =
-    register ^^ { Operand.RegisterOperand.apply }
+    expression ^^ { Operand.RegisterOperand.apply }
 
   def parameterCountOperand: Parser[Operand.ParameterCountOperand] =
-    symbol ^^ { Operand.ParameterCountOperand.apply }
+    expression ^^ { Operand.ParameterCountOperand.apply }
 
   def trapParameterOperand: Parser[Operand.TrapParameterOperand] =
-    symbol ^^ { Operand.TrapParameterOperand.apply }
+    expression ^^ { Operand.TrapParameterOperand.apply }

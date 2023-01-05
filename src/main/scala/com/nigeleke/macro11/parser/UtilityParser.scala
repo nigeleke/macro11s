@@ -25,11 +25,9 @@ trait UtilityParser extends RegexParsers:
   private def binaryOperatorExpression = term ~ binaryOperator ~ term ^^ { case lhs ~ o ~ rhs =>
     BinaryOperatorExpression(lhs, o, rhs)
   }
-  private def simpleExpression       = term ^^ { SimpleExpression.apply }
-  def expression: Parser[Expression] = binaryOperatorExpression ||| simpleExpression
-  def registerExpression             = registerTerm ^^ { RegisterExpression.apply }
+  private def leafExpression         = term ^^ { LeafExpression.apply }
+  def expression: Parser[Expression] = binaryOperatorExpression ||| leafExpression
 
-//  def stringUntil(c: Char) = rep(elem("", _ != c)) ^^ { _.mkString("") }
   def macroArgument: Parser[ExpressionTerm] = expressionTerm
 
   private def ascii1Term                 = "'" ~> anyCharacter ^^ { AsciiChar1Term.apply }

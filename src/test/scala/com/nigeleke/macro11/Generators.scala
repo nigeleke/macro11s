@@ -64,8 +64,8 @@ object Generators:
   val genExpressionOption: Gen[Option[String]] = Gen.option(genExpression)
   val genExpressionList: Gen[List[String]]     = Gen.nonEmptyListOf(genExpression)
 
-  val genNumericExpression: Gen[String] = genSymbol
-  val genMacroArgument: Gen[String]     = genExpressionTerm
+  val genRegisterExpression: Gen[String] = genRegister
+  val genMacroArgument: Gen[String]      = genExpressionTerm
 
 
   // format: off
@@ -79,7 +79,7 @@ object Generators:
     yield operand
   // format: on
 
-  val genAddressOffsetOperand: Gen[String] = genSymbol
+  val genAddressOffsetOperand: Gen[String] = genExpression
 
   // Instruction...
   private val mnemonics = Instruction.Mnemonic.values.toSeq

@@ -21,22 +21,25 @@ object Operand:
   final case class AddressingModeOperand(mode: AddressingMode) extends Operand
 
   /** [[Operand]] used by Branch and Jump [[Instruction]]s.
-    * @param a
+    * @param address
     *   An expression, providing the target address for the branch if conditions are met.
     */
-  final case class AddressOffsetOperand(a: String) extends Operand
+  final case class AddressOffsetOperand(address: Expression) extends Operand
 
-  /** @todo
-    * @param r
+  /** [[Operand]] used by some [[Instruction]]s such as [[JSR]], [[MUL]], [[FMUL]], which reference a specific register.
+    * @param register
+    *   An expression referencing one of the registers.
     */
-  final case class RegisterOperand(r: String) extends Operand
+  final case class RegisterOperand(register: Expression) extends Operand
 
-  /** @todo
-    * @param pc
+  /** [[Operand]] used by the [[MARK]] [[Instruction]].
+    * @param count
+    *   The number of words to be removed from the stack when [[MARK]] is executed.
     */
-  final case class ParameterCountOperand(pc: String) extends Operand
+  final case class ParameterCountOperand(count: Expression) extends Operand
 
-  /** @todo
-    * @param tp
+  /** [[Operand]] used by the [[TRAP]] [[Instruction]].
+    * @param id
+    *   An expression from 0 to 377,,8,, identifying the [[TRAP]].
     */
-  final case class TrapParameterOperand(tp: String) extends Operand
+  final case class TrapParameterOperand(id: Expression) extends Operand

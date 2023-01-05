@@ -12,7 +12,7 @@ import scala.annotation.tailrec
   * @param isGlobal
   *   True if the label was terminated by "::", false otherwise. If isGlobal is false, the symbol itself may still be global.
   */
-case class Label(symbol: String, isGlobal: Boolean)
+final case class Label(symbol: String, isGlobal: Boolean)
 
 object Label:
 
@@ -23,7 +23,7 @@ object Label:
     * @return
     *   The[[Label]] object.
     */
-  def apply(s: String): Label =
+  def from(s: String): Label =
     require(s.endsWith(":"))
     Label(s.stripTrailing(":"), s.endsWith(("::")))
 

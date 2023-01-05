@@ -134,7 +134,7 @@ class UtilityParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with M
       "a single term" in {
         forAll(genTerm) { term =>
           ParserUnderTest.parse(ParserUnderTest.expression, term) match
-            case Success(result, _)  => result should be(a[SimpleExpression])
+            case Success(result, _)  => result should be(a[LeafExpression])
             case Failure(message, _) => fail(message)
             case Error(error, _)     => fail(error)
         }

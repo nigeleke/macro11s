@@ -108,8 +108,8 @@ class InstructionParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks wi
 
     "manage instruction token separators" when {
 
-      val deferredR0 = Operand.AddressingModeOperand(AddressingMode.RegisterDeferred(RegisterExpression(RegisterTerm("R0"))))
-      val r1         = Operand.AddressingModeOperand(AddressingMode.Register(RegisterExpression(RegisterTerm("R1"))))
+      val deferredR0 = Operand.AddressingModeOperand(AddressingMode.RegisterDeferred(LeafExpression(RegisterTerm("R0"))))
+      val r1         = Operand.AddressingModeOperand(AddressingMode.Register(LeafExpression(RegisterTerm("R1"))))
 
       "space" in {
         parseAndCheckResult("MOV @R0, R1", "MOV", List(deferredR0, r1))

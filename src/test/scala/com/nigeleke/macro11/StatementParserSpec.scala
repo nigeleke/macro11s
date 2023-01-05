@@ -49,7 +49,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with
 
       "+labels-instruction-comment" in {
         forAll(genLabelList) { ls =>
-          val expectedLabels = ls.map(Label.apply)
+          val expectedLabels = ls.map(Label.from)
           val lsString       = ls.mkString(" ")
           parseAndCheckResult(lsString, Statement(expectedLabels, None, Comment("")))
         }
@@ -57,7 +57,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with
 
       "+labels-instruction+comment" in {
         forAll(genLabelList, genComment) { (ls, c) =>
-          val expectedLabels = ls.map(Label.apply)
+          val expectedLabels = ls.map(Label.from)
           val lsString       = ls.mkString(" ")
           parseAndCheckResult(s"$lsString $c", Statement(expectedLabels, None, Comment(c)))
         }
@@ -65,7 +65,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with
 
       "+labels+instruction-comment" in {
         forAll(genLabelList, genInstruction) { (ls, i) =>
-          val expectedLabels      = ls.map(Label.apply)
+          val expectedLabels      = ls.map(Label.from)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")
           parseAndCheckResult(s"$lsString $i", Statement(expectedLabels, Option(expectedInstruction), Comment("")))
@@ -74,7 +74,7 @@ class StatementParserSpec extends AnyWordSpec with ScalaCheckPropertyChecks with
 
       "+labels+instruction+comment" in {
         forAll(genLabelList, genInstruction, genComment) { (ls, i, c) =>
-          val expectedLabels      = ls.map(Label.apply)
+          val expectedLabels      = ls.map(Label.from)
           val expectedInstruction = Instruction(Instruction.Mnemonic.valueOf(i), Seq.empty)
           val lsString            = ls.mkString(" ")
           parseAndCheckResult(s"$lsString $i $c", Statement(expectedLabels, Option(expectedInstruction), Comment(c)))

@@ -10,5 +10,4 @@ package com.nigeleke.macro11.ast
   */
 trait Expression
 final case class BinaryOperatorExpression(lhs: Term, op: String, rhs: Term) extends Expression
-final case class SimpleExpression(term: Term)                               extends Expression
-final case class RegisterExpression(term: RegisterTerm)                     extends Expression
+final case class LeafExpression(term: Term)                                 extends Expression
